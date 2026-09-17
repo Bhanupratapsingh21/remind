@@ -1,0 +1,95 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  email           String            @unique
+  username        String?           @unique
+  phone           String?           @unique
+  password        String
+  isPhoneVerified Boolean           @default(false)
+  isEmailVerified Boolean           @default(false)
+  isOnboarded     Boolean           @default(false)
+  referralSource  String?
+  plan            String            @default("TRIAL") // TRIAL, PRO, LIFETIME
+  trialEndsAt     DateTime?
+  maxReminders    Int               @default(2) // 2 reminders limit on trial
+  preferredVoice  String            @default("Elena")
+  timezone        String            @default("UTC")
+  quietHoursStart String            @default("22:00")
+  quietHoursEnd   String            @default("08:00")
+  reminders       Reminder[]
+  callLogs        CallLog[]
+  refreshTokens   RefreshToken[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model OtpVerification {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String   // Mobile number with country code, or email address
+  code       String   // 6-digit OTP code (hashed or direct)
+  type       String   // "PHONE" | "EMAIL"
+  expiresAt  DateTime
+  consumed   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([identifier, type])
+  @@map("otp_verifications")
+}
+
+model Reminder {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String    @db.ObjectId
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task         String
+  scheduledAt  DateTime
+  voicePersona String    @default("Elena (Friendly)")
+  status       String    @default("PENDING") // PENDING, CALLING, COMPLETED, RESCHEDULED, FAILED
+  retryCount   Int       @default(0)
+  callLogs     CallLog[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId, scheduledAt])
+  @@map("reminders")
+}
+
+model CallLog {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  reminderId   String    @db.ObjectId
+  reminder     Reminder  @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  userId       String    @db.ObjectId
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  callSid      String?
+  duration     Int?
+  status       String    @default("INITIATED") // INITIATED, COMPLETED, NO_ANSWER, BUSY, FAILED
+  transcript   String?
+  userResponse String?   // "DONE" | "RESCHEDULE_30M" | "RESCHEDULE_1H" | "UNKNOWN"
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([reminderId])
+  @@map("call_logs")
+}
