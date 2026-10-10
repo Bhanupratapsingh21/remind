@@ -20,4 +20,26 @@ export const ENV = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
   SMTP_FROM: process.env.SMTP_FROM || "Eavara OTP <eavara@bpss.tech>",
+
+  // Redis & BullMQ
+  REDIS_URL: process.env.REDIS_URL || "",
+  REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",
+  REDIS_PORT: process.env.REDIS_PORT ? parseInt(process.env.REDIS_PORT, 10) : 6379,
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD || undefined,
+
+  // Vapi AI & Telephony
+  VAPI_API_KEY: process.env.VAPI_API_KEY || "",
+  VAPI_ASSISTANT_ID: process.env.VAPI_ASSISTANT_ID || "",
+  VAPI_PHONE_NUMBER_ID: process.env.VAPI_PHONE_NUMBER_ID || "",
+  VAPI_BASE_URL: process.env.VAPI_BASE_URL || "https://api.vapi.ai",
+  VAPI_MOCK_CALLS: process.env.VAPI_MOCK_CALLS === "true" || !process.env.VAPI_API_KEY,
+
+  // Vobiz Telephony
+  VOBIZ_AUTH_ID: process.env.VOBIZ_AUTH_ID || "",
+  VOBIZ_AUTH_TOKEN: process.env.VOBIZ_AUTH_TOKEN || "",
+
+  // App & Webhooks
+  WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL || "http://localhost:5000",
+  APP_TIMEZONE: process.env.APP_TIMEZONE || "Asia/Kolkata",
 };
+
