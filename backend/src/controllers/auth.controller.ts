@@ -5,6 +5,7 @@ import prisma from "../config/db";
 import { OtpService } from "../services/otp.service";
 import { TokenService } from "../services/token.service";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
+import { toE164 } from "../utils/phone.utils";
 
 // Validation Schemas
 const sendOtpSchema = z.object({
@@ -468,7 +469,15 @@ export class AuthController {
       return;
     }
 
-    const { referralSource, phone, timezone, preferredVoice } = parsed.data;
+    const { referralSource, timezone, preferredVoice } = parsed.data;
+    const phone = toE164(parsed.data.phone);
+    if (!phone) {
+      res.status(400).json({
+        success: false,
+        message: "Please enter a valid phone number including the country code.",
+      });
+      return;
+    }
 
     try {
       // Check if phone number is already registered to another user

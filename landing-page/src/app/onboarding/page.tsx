@@ -89,7 +89,7 @@ export default function OnboardingPage() {
 
   const handleFinishOnboarding = async (e: React.FormEvent) => {
     e.preventDefault();
-    const fullPhone = `${countryCode} ${phoneNumber.trim()}`;
+    const fullPhone = `${countryCode}${phoneNumber.replace(/\D/g, "")}`;
 
     if (!phoneNumber || phoneNumber.trim().length < 7) {
       toast.error("Please enter a valid phone number for voice calls.");
