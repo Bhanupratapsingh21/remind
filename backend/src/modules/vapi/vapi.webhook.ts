@@ -1,7 +1,28 @@
 import { Request, Response } from "express";
-import { VapiToolsService } from "./vapi.tools";
+import { ToolCallResult, VapiToolsService } from "./vapi.tools";
 import { CallService } from "../calls/call.service";
 import prisma from "../../config/db";
+
+/**
+ * Identify the reminder and user a Vapi call belongs to. The attempt record (keyed by Vapi call ID)
+ * is authoritative; call metadata is the fallback. Never trust IDs supplied by the LLM.
+ */
+const resolveCallContext = async (message: any): Promise<{ reminderId?: string; userId?: string }> => {
+  const call = message.call || {};
+
+  if (call.id) {
+    const attempt = await prisma.reminderAttempt.findFirst({
+      where: { vapiCallId: call.id },
+      include: { reminder: { select: { id: true, userId: true } } },
+    });
+    if (attempt) {
+      return { reminderId: attempt.reminder.id, userId: attempt.reminder.userId };
+    }
+  }
+
+  const metadata = call.assistantOverrides?.metadata || call.assistant?.metadata || message.assistant?.metadata || {};
+  return { reminderId: metadata.reminderId, userId: metadata.userId };
+};
 
 export class VapiWebhookController {
   /**
@@ -14,44 +35,56 @@ export class VapiWebhookController {
       const message = payload.message || payload;
       const type = message.type || payload.type;
 
-      console.log(`\n📥 [Vapi Webhook] Received event: "${type}"`);
+      console.log(`
+📥 [Vapi Webhook] Received event: "${type}"`);
 
       // 1. Tool Calls / Function Calls
       if (type === "tool-calls" || type === "function-call") {
-        const toolCalls = message.toolCalls || (message.functionCall ? [message.functionCall] : []);
-        const results = [];
+        const toolCalls = message.toolCalls || message.toolCallList || (message.functionCall ? [message.functionCall] : []);
+        const { reminderId, userId } = await resolveCallContext(message);
+        const results: ToolCallResult[] = [];
 
         for (const call of toolCalls) {
           const toolCallId = call.id || call.toolCallId || "tool_" + Date.now();
           const func = call.function || call;
           const funcName = func.name;
-          const args = typeof func.arguments === "string" ? JSON.parse(func.arguments) : (func.arguments || {});
 
-          console.log(`🔧 [Vapi Webhook] Executing tool: ${funcName}`, args);
+          let args: any = {};
+          try {
+            args = typeof func.arguments === "string" ? JSON.parse(func.arguments) : func.arguments || {};
+          } catch {
+            results.push({ toolCallId, error: "Tool arguments were not valid JSON." });
+            continue;
+          }
 
-          let toolResult;
+          console.log(`🔧 [Vapi Webhook] Executing tool: ${funcName} (reminder ${reminderId})`, args);
+
+          if (funcName !== "create_reminder" && !reminderId) {
+            results.push({ toolCallId, error: "Could not identify the reminder for this call." });
+            continue;
+          }
+
+          let toolResult: ToolCallResult;
           switch (funcName) {
             case "complete_reminder":
-              toolResult = await VapiToolsService.completeReminder(args.reminderId, toolCallId);
+              toolResult = await VapiToolsService.completeReminder(reminderId!, toolCallId);
               break;
             case "snooze_reminder":
-              toolResult = await VapiToolsService.snoozeReminder(args.reminderId, args, toolCallId);
+              toolResult = await VapiToolsService.snoozeReminder(reminderId!, args, toolCallId);
               break;
             case "cancel_reminder":
-              toolResult = await VapiToolsService.cancelReminder(args.reminderId, toolCallId);
+              toolResult = await VapiToolsService.cancelReminder(reminderId!, toolCallId);
               break;
             case "get_reminder":
-              toolResult = await VapiToolsService.getReminder(args.reminderId, toolCallId);
+              toolResult = await VapiToolsService.getReminder(reminderId!, toolCallId);
               break;
             case "create_reminder":
-              const userId = message.call?.customer?.id || message.call?.assistantOverrides?.variableValues?.userId;
-              toolResult = await VapiToolsService.createReminder(userId, args, toolCallId);
+              toolResult = userId
+                ? await VapiToolsService.createReminder(userId, args, toolCallId)
+                : { toolCallId, error: "Could not identify the user for this call." };
               break;
             default:
-              toolResult = {
-                toolCallId,
-                result: { success: false, message: `Tool "${funcName}" not recognized.` },
-              };
+              toolResult = { toolCallId, error: `Tool "${funcName}" not recognized.` };
           }
 
           results.push(toolResult);
@@ -67,6 +100,7 @@ export class VapiWebhookController {
         const callStatus = message.status;
 
         console.log(`📞 [Vapi Webhook] Status update for call ${callId}: ${callStatus}`);
+        await CallService.handleStatusUpdate(callId, callStatus);
         res.status(200).json({ success: true });
         return;
       }
@@ -76,21 +110,11 @@ export class VapiWebhookController {
         const call = message.call || payload.call || {};
         const callId = call.id || payload.callId;
         const endedReason = message.endedReason || call.endedReason || "normal-end";
-        const duration = Math.round(message.durationSeconds || call.durationSeconds || (message.durationMinutes ? message.durationMinutes * 60 : 0));
-        const transcript = message.transcript || call.transcript || "";
-
-        let status = "COMPLETED";
-        if (
-          endedReason.includes("not-answer") ||
-          endedReason.includes("no-answer") ||
-          endedReason === "customer-did-not-answer"
-        ) {
-          status = "NO_ANSWER";
-        } else if (endedReason.includes("busy") || endedReason === "customer-busy") {
-          status = "BUSY";
-        } else if (endedReason.includes("failed") || endedReason === "call-failed") {
-          status = "FAILED";
-        }
+        const duration = Math.round(
+          message.durationSeconds || call.durationSeconds || (message.durationMinutes ? message.durationMinutes * 60 : 0)
+        );
+        const transcript = message.artifact?.transcript || message.transcript || call.transcript || "";
+        const status = CallService.mapEndedReason(endedReason);
 
         await CallService.handleCallCompletion({
           vapiCallId: callId,
@@ -98,7 +122,7 @@ export class VapiWebhookController {
           duration,
           transcript,
           failureReason: status !== "COMPLETED" ? endedReason : undefined,
-          endedAt: new Date(),
+          endedAt: message.endedAt ? new Date(message.endedAt) : new Date(),
         });
 
         res.status(200).json({ success: true });

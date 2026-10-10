@@ -69,7 +69,7 @@ export class ReminderService {
     });
 
     // Schedule BullMQ job for when reminder is due
-    await SchedulerService.scheduleReminder(reminder.id, scheduledDate, 1);
+    await SchedulerService.startNewCycle(reminder.id, scheduledDate);
 
     return reminder;
   }
@@ -173,8 +173,7 @@ export class ReminderService {
 
       // Reschedule BullMQ job if date changed and reminder is pending
       if (["SCHEDULED", "SNOOZED"].includes(reminder.status)) {
-        await SchedulerService.cancelPendingJobs(id, reminder.maxAttempts);
-        await SchedulerService.scheduleReminder(id, newDate, 1);
+        await SchedulerService.startNewCycle(id, newDate);
       }
     }
 
@@ -191,7 +190,7 @@ export class ReminderService {
       throw new Error("Reminder not found");
     }
 
-    await SchedulerService.cancelPendingJobs(id, reminder.maxAttempts);
+    await SchedulerService.cancelPendingJobs(id);
 
     await ReminderRepository.update(id, userId, {
       status: "COMPLETED",
@@ -224,15 +223,13 @@ export class ReminderService {
       snoozeDate = new Date(Date.now() + minutes * 60 * 1000);
     }
 
-    await SchedulerService.cancelPendingJobs(id, reminder.maxAttempts);
-
     await ReminderRepository.update(id, userId, {
       status: "SNOOZED",
       scheduledAt: snoozeDate,
       retryCount: 0,
     });
 
-    await SchedulerService.scheduleReminder(id, snoozeDate, 1);
+    await SchedulerService.startNewCycle(id, snoozeDate);
 
     return ReminderRepository.findById(id, userId);
   }
@@ -246,7 +243,7 @@ export class ReminderService {
       throw new Error("Reminder not found");
     }
 
-    await SchedulerService.cancelPendingJobs(id, reminder.maxAttempts);
+    await SchedulerService.cancelPendingJobs(id);
 
     await ReminderRepository.update(id, userId, {
       status: "CANCELLED",
@@ -264,7 +261,7 @@ export class ReminderService {
       throw new Error("Reminder not found");
     }
 
-    await SchedulerService.cancelPendingJobs(id, reminder.maxAttempts);
+    await SchedulerService.cancelPendingJobs(id);
     await ReminderRepository.delete(id, userId);
     return { success: true };
   }

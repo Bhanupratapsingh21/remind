@@ -105,10 +105,19 @@ export const checkCallingHours = (
   }
 
   // Overnight window: e.g. 20:00 to 06:00
-  const isAllowed = currentLocalMinutes >= startMinutes || currentLocalMinutes < endMinutes;
+  if (currentLocalMinutes >= startMinutes || currentLocalMinutes < endMinutes) {
+    return {
+      isAllowed: true,
+      currentLocalTime: local.timeStr,
+    };
+  }
+
+  // Outside an overnight window we are always between end and start on the same day
+  const diffMs = (startMinutes - currentLocalMinutes) * 60 * 1000;
   return {
-    isAllowed,
+    isAllowed: false,
     currentLocalTime: local.timeStr,
-    nextAllowedDate: isAllowed ? undefined : new Date(date.getTime() + 60 * 60 * 1000),
+    nextAllowedDate: new Date(date.getTime() + diffMs),
+    reason: `Current local time (${local.timeStr}) is outside allowed calling hours (${callingStartTime} - ${callingEndTime}).`,
   };
 };

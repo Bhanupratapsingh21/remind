@@ -33,6 +33,8 @@ export const ENV = {
   VAPI_PHONE_NUMBER_ID: process.env.VAPI_PHONE_NUMBER_ID || "",
   VAPI_BASE_URL: process.env.VAPI_BASE_URL || "https://api.vapi.ai",
   VAPI_MOCK_CALLS: process.env.VAPI_MOCK_CALLS === "true" || !process.env.VAPI_API_KEY,
+  // Shared secret Vapi sends as the x-vapi-secret header on every webhook
+  VAPI_WEBHOOK_SECRET: process.env.VAPI_WEBHOOK_SECRET || "",
 
   // Vobiz Telephony
   VOBIZ_AUTH_ID: process.env.VOBIZ_AUTH_ID || "",
