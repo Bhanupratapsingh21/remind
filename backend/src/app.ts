@@ -2,6 +2,9 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
+import reminderRoutes from "./routes/reminder.routes";
+import userRoutes from "./routes/user.routes";
+import webhookRoutes from "./routes/webhook.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import { ENV } from "./config/env";
@@ -29,11 +32,16 @@ export const createApp = () => {
       service: "remind-backend-api",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      redis: "connected",
+      vapiMock: ENV.VAPI_MOCK_CALLS,
     });
   });
 
   // API Routes
   app.use("/api/auth", authRoutes);
+  app.use("/api/reminders", reminderRoutes);
+  app.use("/api/users", userRoutes);
+  app.use("/api/webhooks", webhookRoutes);
 
   // 404 handler
   app.use((req: Request, res: Response) => {
