@@ -8,6 +8,7 @@ import webhookRoutes from "./routes/webhook.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import { ENV } from "./config/env";
+import { redisClient } from "./config/redis";
 
 export const createApp = () => {
   const app = express();
@@ -26,13 +27,25 @@ export const createApp = () => {
   app.use(requestLogger);
 
   // Health check
-  app.get("/health", (req: Request, res: Response) => {
-    res.status(200).json({
-      status: "ok",
+  app.get("/health", async (req: Request, res: Response) => {
+    let redis = "disconnected";
+    try {
+      // ping() queues forever while disconnected (maxRetriesPerRequest: null), so cap the wait
+      const pong = await Promise.race([
+        redisClient.ping(),
+        new Promise<string>((_, reject) => setTimeout(() => reject(new Error("timeout")), 2000)),
+      ]);
+      redis = pong === "PONG" ? "connected" : "unhealthy";
+    } catch {
+      // stays "disconnected"
+    }
+
+    res.status(redis === "connected" ? 200 : 503).json({
+      status: redis === "connected" ? "ok" : "degraded",
       service: "remind-backend-api",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      redis: "connected",
+      redis,
       vapiMock: ENV.VAPI_MOCK_CALLS,
     });
   });

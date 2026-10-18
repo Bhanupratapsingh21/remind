@@ -1,6 +1,11 @@
 import { Worker, Job } from "bullmq";
 import { redisClient } from "../config/redis";
-import { REMINDER_QUEUE_NAME, ReminderJobPayload, SchedulerService } from "../queues/reminder.queue";
+import {
+  RECONCILE_CALLS_JOB,
+  REMINDER_QUEUE_NAME,
+  ReminderJobPayload,
+  SchedulerService,
+} from "../queues/reminder.queue";
 import prisma from "../config/db";
 import { checkCallingHours } from "../utils/timezone.utils";
 import { CallService } from "../modules/calls/call.service";
@@ -9,7 +14,14 @@ export const createReminderWorker = () => {
   const worker = new Worker<ReminderJobPayload>(
     REMINDER_QUEUE_NAME,
     async (job: Job<ReminderJobPayload>) => {
+      if (job.name === RECONCILE_CALLS_JOB) {
+        await CallService.reconcileStuckCalls();
+        return;
+      }
+
       const { reminderId, attemptNumber } = job.data;
+      // Jobs queued before cycles existed carry only attemptNumber, which was the cycle position then
+      const cycleAttempt = job.data.cycleAttempt ?? attemptNumber;
       console.log(`\n⚙️ [Reminder Worker] Processing job ${job.id} for Reminder: ${reminderId} (Attempt #${attemptNumber})`);
 
       // 1. Fetch reminder with user settings
@@ -40,7 +52,11 @@ export const createReminderWorker = () => {
         console.log(
           `🌙 [Reminder Worker] ${hoursCheck.reason} Postponing reminder "${reminder.title}" to ${hoursCheck.nextAllowedDate.toISOString()}`
         );
-        await SchedulerService.scheduleReminder(reminder.id, hoursCheck.nextAllowedDate, attemptNumber);
+        // A new job ID is required: BullMQ ignores an add() that reuses the ID of the job now running
+        await SchedulerService.scheduleReminder(reminder.id, hoursCheck.nextAllowedDate, attemptNumber, {
+          cycleAttempt,
+          jobIdSuffix: `t${hoursCheck.nextAllowedDate.getTime()}`,
+        });
         return;
       }
 
@@ -48,6 +64,7 @@ export const createReminderWorker = () => {
       await CallService.initiateOutboundCall({
         reminderId,
         attemptNumber: attemptNumber || 1,
+        cycleAttempt,
       });
 
       console.log(`✨ [Reminder Worker] Outbound call processed successfully for job ${job.id}`);

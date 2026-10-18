@@ -3,11 +3,21 @@ import { ENV } from "./config/env";
 import prisma from "./config/db";
 import { redisClient } from "./config/redis";
 import { startReminderWorker, stopReminderWorker } from "./workers/reminder.worker";
+import { SchedulerService } from "./queues/reminder.queue";
+import { VapiService } from "./modules/vapi/vapi.service";
 
 const app = createApp();
 
 // Start the BullMQ Reminder Worker
 startReminderWorker();
+
+// Periodically resolve calls whose end-of-call webhook never arrived
+SchedulerService.scheduleCallReconciliation().catch((err) =>
+  console.error("❌ Could not register call reconciliation job:", err.message)
+);
+
+// Confirm the Vapi phone number (and its telephony provider) before the first call
+VapiService.verifyPhoneNumber();
 
 const server = app.listen(ENV.PORT, () => {
   console.log(`\n=================================================`);

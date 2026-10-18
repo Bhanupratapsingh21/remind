@@ -1,9 +1,13 @@
 import prisma from "../../config/db";
 import { SchedulerService } from "../../queues/reminder.queue";
+import { ReminderService } from "../reminders/reminder.service";
 
+/**
+ * Vapi tool result. Vapi reads `result` (or `error`) as a string and hands it to the model.
+ */
 export interface ToolCallResult {
   toolCallId: string;
-  result: Record<string, any> | string;
+  result?: string;
   error?: string;
 }
 
@@ -15,7 +19,7 @@ export class VapiToolsService {
     try {
       const reminder = await prisma.reminder.findUnique({ where: { id: reminderId } });
       if (!reminder) {
-        return { toolCallId, result: { success: false, message: "Reminder not found" } };
+        return { toolCallId, error: "Reminder not found." };
       }
 
       const updated = await prisma.reminder.update({
@@ -27,20 +31,16 @@ export class VapiToolsService {
       });
 
       // Cancel any future scheduled retry jobs
-      await SchedulerService.cancelPendingJobs(reminderId, reminder.maxAttempts);
+      await SchedulerService.cancelPendingJobs(reminderId);
 
       console.log(`✅ [Vapi Tools] Reminder "${updated.title}" marked as COMPLETED by voice assistant.`);
       return {
         toolCallId,
-        result: {
-          success: true,
-          status: "COMPLETED",
-          message: `Great job! I've marked "${updated.title}" as completed.`,
-        },
+        result: `Marked "${updated.title}" as completed.`,
       };
     } catch (error: any) {
       console.error("❌ [Vapi Tools] Error completing reminder:", error);
-      return { toolCallId, result: { success: false, error: error.message } };
+      return { toolCallId, error: `Could not complete the reminder: ${error.message}` };
     }
   }
 
@@ -55,7 +55,7 @@ export class VapiToolsService {
     try {
       const reminder = await prisma.reminder.findUnique({ where: { id: reminderId } });
       if (!reminder) {
-        return { toolCallId, result: { success: false, message: "Reminder not found" } };
+        return { toolCallId, error: "Reminder not found." };
       }
 
       let snoozeDate: Date;
@@ -73,9 +73,6 @@ export class VapiToolsService {
         snoozeDate = new Date(Date.now() + minutes * 60 * 1000);
       }
 
-      // Cancel prior pending retry jobs
-      await SchedulerService.cancelPendingJobs(reminderId, reminder.maxAttempts);
-
       // Reset retry count on explicit user snooze so they get full retry attempts when due again
       const updated = await prisma.reminder.update({
         where: { id: reminderId },
@@ -86,8 +83,8 @@ export class VapiToolsService {
         },
       });
 
-      // Schedule new BullMQ job for the snoozed time
-      await SchedulerService.scheduleReminder(reminderId, snoozeDate, 1);
+      // Cancel prior pending retries and queue the callback as a new call
+      await SchedulerService.startNewCycle(reminderId, snoozeDate);
 
       console.log(
         `⏰ [Vapi Tools] Reminder "${updated.title}" snoozed for ${minutes} minutes (due at ${snoozeDate.toISOString()}).`
@@ -95,16 +92,11 @@ export class VapiToolsService {
 
       return {
         toolCallId,
-        result: {
-          success: true,
-          status: "SNOOZED",
-          snoozedUntil: snoozeDate.toISOString(),
-          message: `Sure thing! I will call you back in ${minutes} minutes.`,
-        },
+        result: `Snoozed. The next call is in ${minutes} minutes (at ${snoozeDate.toISOString()}).`,
       };
     } catch (error: any) {
       console.error("❌ [Vapi Tools] Error snoozing reminder:", error);
-      return { toolCallId, result: { success: false, error: error.message } };
+      return { toolCallId, error: `Could not snooze the reminder: ${error.message}` };
     }
   }
 
@@ -115,7 +107,7 @@ export class VapiToolsService {
     try {
       const reminder = await prisma.reminder.findUnique({ where: { id: reminderId } });
       if (!reminder) {
-        return { toolCallId, result: { success: false, message: "Reminder not found" } };
+        return { toolCallId, error: "Reminder not found." };
       }
 
       const updated = await prisma.reminder.update({
@@ -126,20 +118,16 @@ export class VapiToolsService {
       });
 
       // Cancel any future pending jobs
-      await SchedulerService.cancelPendingJobs(reminderId, reminder.maxAttempts);
+      await SchedulerService.cancelPendingJobs(reminderId);
 
       console.log(`🚫 [Vapi Tools] Reminder "${updated.title}" CANCELLED by voice assistant.`);
       return {
         toolCallId,
-        result: {
-          success: true,
-          status: "CANCELLED",
-          message: `Understood. I have cancelled the reminder for "${updated.title}".`,
-        },
+        result: `Cancelled the reminder "${updated.title}".`,
       };
     } catch (error: any) {
       console.error("❌ [Vapi Tools] Error cancelling reminder:", error);
-      return { toolCallId, result: { success: false, error: error.message } };
+      return { toolCallId, error: `Could not cancel the reminder: ${error.message}` };
     }
   }
 
@@ -150,25 +138,21 @@ export class VapiToolsService {
     try {
       const reminder = await prisma.reminder.findUnique({ where: { id: reminderId } });
       if (!reminder) {
-        return { toolCallId, result: { success: false, message: "Reminder not found" } };
+        return { toolCallId, error: "Reminder not found." };
       }
 
       return {
         toolCallId,
-        result: {
-          success: true,
-          reminder: {
-            id: reminder.id,
-            title: reminder.title,
-            description: reminder.description,
-            priority: reminder.priority,
-            scheduledAt: reminder.scheduledAt,
-            status: reminder.status,
-          },
-        },
+        result: JSON.stringify({
+          title: reminder.title,
+          description: reminder.description,
+          priority: reminder.priority,
+          scheduledAt: reminder.scheduledAt,
+          status: reminder.status,
+        }),
       };
     } catch (error: any) {
-      return { toolCallId, result: { success: false, error: error.message } };
+      return { toolCallId, error: `Could not load the reminder: ${error.message}` };
     }
   }
 
@@ -182,33 +166,24 @@ export class VapiToolsService {
   ): Promise<ToolCallResult> {
     try {
       const delay = args.delayMinutes || 60;
-      const scheduledAt = new Date(Date.now() + delay * 60 * 1000);
 
-      const reminder = await prisma.reminder.create({
-        data: {
-          userId,
-          title: args.title,
-          scheduledAt,
-          priority: args.priority || "MEDIUM",
-          status: "SCHEDULED",
-        },
+      // Goes through ReminderService so trial limits and user defaults apply
+      const reminder = await ReminderService.createReminder({
+        userId,
+        title: args.title,
+        scheduledAt: new Date(Date.now() + delay * 60 * 1000),
+        priority: args.priority || "MEDIUM",
       });
-
-      await SchedulerService.scheduleReminder(reminder.id, scheduledAt, 1);
 
       console.log(`✨ [Vapi Tools] Created in-call reminder "${reminder.title}" due in ${delay}m.`);
 
       return {
         toolCallId,
-        result: {
-          success: true,
-          message: `Created reminder for "${reminder.title}" in ${delay} minutes.`,
-          reminderId: reminder.id,
-        },
+        result: `Created a reminder for "${reminder.title}" in ${delay} minutes.`,
       };
     } catch (error: any) {
       console.error("❌ [Vapi Tools] Error creating in-call reminder:", error);
-      return { toolCallId, result: { success: false, error: error.message } };
+      return { toolCallId, error: `Could not create the reminder: ${error.message}` };
     }
   }
 }

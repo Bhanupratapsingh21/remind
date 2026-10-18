@@ -1,48 +1,41 @@
 "use client";
 
 import React from "react";
+import { CalendarClock, CheckCircle2, PhoneCall, Volume2 } from "lucide-react";
+import { Eyebrow } from "@/components/site/Eyebrow";
 
 interface FeatureCardProps {
   number: string;
   category: string;
   title: string;
   description: string;
+  icon: React.ElementType;
   onCardClick?: () => void;
 }
 
-function FeatureCard({
-  number,
-  category,
-  title,
-  description,
-  onCardClick,
-}: FeatureCardProps) {
+function FeatureCard({ number, category, title, description, icon: Icon, onCardClick }: FeatureCardProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onCardClick}
-      className="group flex flex-col pt-6 relative cursor-pointer select-none"
+      className="group flex flex-col rounded-[22px] bg-white p-6 text-left transition-shadow hover:shadow-[0_12px_40px_-18px_rgba(120,80,30,.35)] sm:p-7"
     >
-      {/* Top line with dot indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        <span className="h-1.5 w-1.5 rounded-full bg-neutral-900 shrink-0" />
-        <span className="h-[1px] w-full bg-neutral-200" />
+      <div className="flex items-center justify-between">
+        <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 text-amber-600">
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-400">
+          {number} / {category}
+        </span>
       </div>
 
-      {/* Kicker */}
-      <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.2em] text-neutral-400 font-medium">
-        {number} / {category}
-      </p>
+      <h3 className="mt-8 font-display text-2xl tracking-[-0.02em] text-zinc-950">{title}</h3>
+      <p className="mt-2 font-serif text-[15px] leading-relaxed text-zinc-500">{description}</p>
 
-      {/* Title */}
-      <h3 className="mt-8 text-xl sm:text-2xl font-normal text-[#151515] tracking-tight group-hover:text-black transition-colors">
-        {title}
-      </h3>
-
-      {/* Description */}
-      <p className="mt-3 text-xs sm:text-sm text-neutral-500 font-normal leading-relaxed">
-        {description}
-      </p>
-    </div>
+      <span className="mt-auto flex items-center gap-1.5 pt-6 text-[12px] text-zinc-400 transition-colors group-hover:text-amber-600">
+        <Volume2 className="h-3.5 w-3.5" /> Tap to hear it
+      </span>
+    </button>
   );
 }
 
@@ -58,66 +51,54 @@ export function DailyCareSection() {
   };
 
   return (
-    <section className="w-full bg-white py-24 sm:py-32 px-6">
-      <div className="mx-auto max-w-5xl">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12">
-          {/* Left Title */}
+    <section id="features" className="w-full scroll-mt-20 px-4 py-24 sm:py-32">
+      <div className="mx-auto max-w-6xl">
+        <div className="flex flex-col justify-between gap-8 pb-12 md:flex-row md:items-end">
           <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-neutral-400 font-medium">
-              REAL-TIME ACCOUNTABILITY
-            </p>
-            <h2 className="mt-4 text-4xl sm:text-5xl font-normal text-[#151515] tracking-tight leading-[1.12]">
+            <Eyebrow>Real-time accountability</Eyebrow>
+            <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
               For the commitments
               <br />
-              you can't afford to drop.
+              you can&apos;t afford to drop.
             </h2>
           </div>
 
-          {/* Right Poetic Subtext */}
-          <div className="text-xs sm:text-sm text-neutral-500 space-y-1.5 font-normal md:text-left leading-relaxed">
+          <div className="space-y-1 font-serif text-[16px] leading-relaxed text-zinc-500">
             <p>Push alerts get swiped away.</p>
             <p>Alarms get snoozed into oblivion.</p>
-            <p>A direct voice call gets things done.</p>
+            <p className="text-zinc-900">A direct voice call gets things done.</p>
           </div>
         </div>
 
-        {/* 3 Editorial Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
+        <div className="grid grid-cols-1 gap-3 rounded-[28px] bg-tray p-3 md:grid-cols-3">
           <FeatureCard
             number="01"
-            category="DIRECT PHONE CALL"
+            category="Direct call"
+            icon={PhoneCall}
             title="Real voice calls."
             description="Your phone rings right when it matters. An AI agent delivers your task out loud with crisp human clarity."
-            onCardClick={() =>
-              speakReminder("Hello, this is Remind calling for your scheduled task.")
-            }
+            onCardClick={() => speakReminder("Hello, this is Remind calling for your scheduled task.")}
           />
-
           <FeatureCard
             number="02"
-            category="SMART RESCHEDULING"
+            category="Rescheduling"
+            icon={CalendarClock}
             title="“Call me in 30 minutes.”"
             description="In a meeting or tied up? Simply tell the agent to try again later. Remind reschedules the call automatically."
-            onCardClick={() =>
-              speakReminder("Understood. I will reschedule and call you back in 30 minutes.")
-            }
+            onCardClick={() => speakReminder("Understood. I will reschedule and call you back in 30 minutes.")}
           />
-
           <FeatureCard
             number="03"
-            category="LIVE RESOLUTION"
+            category="Resolution"
+            icon={CheckCircle2}
             title="Say “Done” to complete."
             description="Once you finish the task, speak to confirm. Your dashboard immediately checks it off your list."
-            onCardClick={() =>
-              speakReminder("Great job! Marked as completed on your dashboard.")
-            }
+            onCardClick={() => speakReminder("Great job! Marked as completed on your dashboard.")}
           />
         </div>
 
-        {/* Footnote */}
-        <p className="mt-16 text-xs text-neutral-400 font-normal">
-          Works on any phone number worldwide · Configurable quiet hours · Dynamic conversational AI
+        <p className="mt-8 text-center text-[13px] text-zinc-400">
+          Works on any phone number · Configurable quiet hours · Conversational AI
         </p>
       </div>
     </section>

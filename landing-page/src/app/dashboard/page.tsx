@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout } from "@/store/slices/authSlice";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { AgentMascot } from "@/components/AgentMascot";
+import { SiteNav } from "@/components/site/SiteNav";
 import {
   PhoneCall,
   Plus,
@@ -15,7 +16,6 @@ import {
   RotateCcw,
   LogOut,
   Volume2,
-  Sparkles,
   ArrowUpRight,
   History,
   Trash2,
@@ -278,10 +278,10 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#faf9f5]">
+      <div className="min-h-screen flex items-center justify-center bg-canvas">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-6 w-6 rounded-full border-2 border-neutral-900 border-t-transparent animate-spin" />
-          <p className="text-xs font-mono text-neutral-400">Loading Remind Dashboard...</p>
+          <AgentMascot size={80} />
+          <p className="text-xs font-mono text-neutral-400">Waking up your agent...</p>
         </div>
       </div>
     );
@@ -292,61 +292,41 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f5] text-[#151515] font-sans antialiased">
+    <div className="min-h-screen bg-canvas text-ink antialiased">
       {/* TOP DASHBOARD NAVIGATION */}
-      <header className="sticky top-0 z-40 border-b border-neutral-200/80 bg-white/95 backdrop-blur-xs">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6 sm:px-10">
-          {/* Left Brand */}
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-2xl font-bold tracking-tighter text-[#151515] hover:opacity-80 transition-opacity"
-            >
-              remind
-            </Link>
-            <span className="h-4 w-[1px] bg-neutral-300 hidden sm:block" />
-            <span className="text-xs font-mono text-neutral-500 hidden sm:inline-block">
-              Dashboard
-            </span>
-          </div>
-
-          {/* Right User Bar */}
-          <div className="flex items-center gap-4">
+      <SiteNav
+        showLinks={false}
+        right={
+          <div className="flex items-center gap-3">
             {/* Active Phone Tag */}
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-100 border border-neutral-200 text-xs font-mono text-neutral-600">
+            <div className="hidden md:flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-mono text-xs text-zinc-600 shadow-xs">
               <PhoneCall className="h-3.5 w-3.5 text-emerald-600" />
               <span>{user?.phone || "No phone linked"}</span>
             </div>
 
             {/* User Profile & Logout */}
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <span className="text-xs font-medium text-[#151515] block">
-                  {user?.name || "User"}
-                </span>
-                {user?.username && (
-                  <span className="text-[11px] font-mono text-neutral-400 block">
-                    @{user.username}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                title="Sign out"
-                className="flex items-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-600 hover:text-black hover:border-neutral-400 transition cursor-pointer shadow-xs"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Sign Out</span>
-              </button>
+            <div className="text-right hidden sm:block">
+              <span className="text-xs font-medium text-ink block">{user?.name || "User"}</span>
+              {user?.username && (
+                <span className="text-[11px] font-mono text-neutral-400 block">@{user.username}</span>
+              )}
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Sign out"
+              className="flex items-center gap-1.5 rounded-xl border border-zinc-900 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-100 transition cursor-pointer"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </button>
           </div>
-        </div>
-      </header>
+        }
+      />
 
       {/* 3-DAY FREE TRIAL BANNER */}
-      <div className="bg-[#18181b] text-white py-3 px-6 sm:px-10 border-b border-neutral-800">
-        <div className="mx-auto max-w-6xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="mx-auto max-w-6xl px-4 pt-2 sm:px-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-[20px] bg-zinc-950 px-5 py-3.5 text-white">
           <div className="flex items-center gap-2.5 text-xs">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="font-semibold tracking-wide">
@@ -371,23 +351,27 @@ export default function DashboardPage() {
       </div>
 
       {/* MAIN DASHBOARD CONTENT */}
-      <main className="mx-auto max-w-6xl px-6 py-10 sm:px-10">
+      <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
         {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-neutral-200/80">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-normal text-[#151515] tracking-tight">
-              Good day, {user?.name || "there"}.
-            </h1>
-            <p className="mt-1 text-xs sm:text-sm text-neutral-500">
-              Your AI voice caller is scheduled via BullMQ and Vapi/Vobiz telephony.
-            </p>
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-6 overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#a9c8ea_0%,#d8e3ef_50%,#f3dcc6_100%)] p-6 sm:p-8">
+          <div className="pointer-events-none absolute -top-20 right-[25%] h-56 w-72 rounded-full bg-[radial-gradient(circle,rgba(255,206,150,.65),transparent_70%)] blur-2xl" />
+          <div className="relative flex items-center gap-4">
+            <AgentMascot size={72} className="hidden sm:block" />
+            <div>
+              <h1 className="font-display text-3xl sm:text-4xl tracking-[-0.03em] text-zinc-950">
+                Good day, {user?.name || "there"}.
+              </h1>
+              <p className="mt-1 font-serif text-[15px] text-zinc-700">
+                Your AI agent will call you the moment each reminder is due.
+              </p>
+            </div>
           </div>
 
           {/* Create Reminder CTA */}
           <button
             type="button"
             onClick={handleOpenCreateModal}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#18181b] px-5 py-2.5 text-xs sm:text-sm font-medium text-white hover:bg-black transition-all cursor-pointer shadow-sm active:scale-95"
+            className="relative inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-medium text-white hover:bg-zinc-800 transition-all cursor-pointer shadow-lg shadow-zinc-950/20 active:scale-95"
           >
             <Plus className="h-4 w-4" />
             New Voice Reminder
@@ -395,58 +379,58 @@ export default function DashboardPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-xs">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-[28px] bg-tray p-3">
+          <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
               Active Reminders
             </span>
-            <p className="mt-2 text-xl sm:text-2xl font-normal text-[#151515]">
+            <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-[#151515]">
               {activeReminders.length}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Queued in BullMQ</p>
+            <p className="mt-1 text-xs text-neutral-500">Scheduled calls</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-xs">
+          <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
               Account Timezone
             </span>
-            <p className="mt-2 text-xl sm:text-2xl font-normal text-neutral-800 truncate">
+            <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-neutral-800 truncate">
               {user?.timezone || "Asia/Kolkata"}
             </p>
             <p className="mt-1 text-xs text-neutral-500">Calling hours applied</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-xs">
+          <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
               Voice Persona
             </span>
-            <p className="mt-2 text-xl sm:text-2xl font-normal text-[#151515]">
+            <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-[#151515]">
               {user?.preferredVoice || "Elena"}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Vapi AI Agent</p>
+            <p className="mt-1 text-xs text-neutral-500">Your agent's voice</p>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-neutral-200/80 shadow-xs">
+          <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
               Telephony Line
             </span>
-            <p className="mt-2 text-xl sm:text-2xl font-normal text-emerald-600 flex items-center gap-1.5">
+            <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-emerald-600 flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               Active
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Vobiz + Vapi SIP</p>
+            <p className="mt-1 text-xs text-neutral-500">Calls reach your phone</p>
           </div>
         </div>
 
         {/* Reminders List Section */}
-        <div className="mt-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-normal text-[#151515] tracking-tight">
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4 px-1">
+            <h2 className="font-display text-2xl text-ink tracking-[-0.02em]">
               Reminders ({reminders.length})
             </h2>
             <button
               onClick={fetchReminders}
-              className="text-xs text-neutral-500 hover:text-black font-mono cursor-pointer flex items-center gap-1"
+              className="rounded-xl px-3 py-1.5 text-xs text-neutral-500 hover:bg-white hover:text-black font-mono cursor-pointer flex items-center gap-1"
             >
               <RotateCcw className="h-3 w-3" />
               Refresh
@@ -454,17 +438,17 @@ export default function DashboardPage() {
           </div>
 
           {loadingReminders ? (
-            <div className="bg-white p-8 rounded-2xl border border-neutral-200 text-center text-xs text-neutral-400">
+            <div className="bg-white p-8 rounded-[28px] text-center text-xs text-neutral-400">
               Loading reminders...
             </div>
           ) : reminders.length === 0 ? (
-            <div className="bg-white p-12 rounded-3xl border border-neutral-200/80 text-center">
-              <Clock className="h-8 w-8 mx-auto text-neutral-400 mb-3" />
+            <div className="flex flex-col items-center bg-white p-12 rounded-[28px] text-center">
+              <AgentMascot size={70} className="mb-2" />
               <p className="text-sm font-medium text-neutral-800">No voice reminders scheduled</p>
               <p className="text-xs text-neutral-500 mt-1">Click "New Voice Reminder" above to get started.</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5 rounded-[28px] bg-tray p-3">
               {reminders.map((reminder) => {
                 const dateObj = new Date(reminder.scheduledAt);
                 const timeFormatted = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -473,12 +457,12 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={reminder.id}
-                    className="group bg-white p-5 rounded-2xl border border-neutral-200/80 hover:border-neutral-300 transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="group bg-white p-5 rounded-[22px] hover:shadow-[0_12px_32px_-18px_rgba(120,80,30,.35)] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
                     {/* Left Task Info */}
                     <div className="flex items-start gap-4">
                       <div
-                        className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                        className={`h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 mt-0.5 ${
                           reminder.status === "COMPLETED"
                             ? "bg-emerald-50 text-emerald-600"
                             : reminder.status === "SNOOZED"
@@ -628,8 +612,8 @@ export default function DashboardPage() {
 
       {/* CREATE REMINDER MODAL */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-neutral-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
               <h3 className="text-lg font-medium text-[#151515] tracking-tight">
                 New Voice Reminder
@@ -637,7 +621,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="text-neutral-400 hover:text-black transition cursor-pointer"
+                className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 hover:bg-zinc-100 hover:text-black transition cursor-pointer"
               >
                 ✕
               </button>
@@ -654,7 +638,7 @@ export default function DashboardPage() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="e.g., Review investor deck with Rahul"
-                  className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-[#151515] placeholder-neutral-400 focus:outline-none focus:border-neutral-900 transition-colors"
+                  className="w-full rounded-2xl border border-zinc-200 p-3 text-sm text-[#151515] placeholder-neutral-400 focus:outline-none focus:border-neutral-900 transition-colors"
                 />
               </div>
 
@@ -667,7 +651,7 @@ export default function DashboardPage() {
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   placeholder="e.g., Ask if the Q3 projections were updated and offer to reschedule if not finished."
-                  className="w-full rounded-xl border border-neutral-300 p-3 text-sm text-[#151515] placeholder-neutral-400 focus:outline-none focus:border-neutral-900 transition-colors"
+                  className="w-full rounded-2xl border border-zinc-200 p-3 text-sm text-[#151515] placeholder-neutral-400 focus:outline-none focus:border-neutral-900 transition-colors"
                 />
               </div>
 
@@ -681,7 +665,7 @@ export default function DashboardPage() {
                     required
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
                   />
                 </div>
 
@@ -694,7 +678,7 @@ export default function DashboardPage() {
                     required
                     value={newTime}
                     onChange={(e) => setNewTime(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
                   />
                 </div>
               </div>
@@ -707,7 +691,7 @@ export default function DashboardPage() {
                   <select
                     value={newPriority}
                     onChange={(e) => setNewPriority(e.target.value as any)}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900 bg-white"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900 bg-white"
                   >
                     <option value="LOW">Low</option>
                     <option value="MEDIUM">Medium</option>
@@ -723,7 +707,7 @@ export default function DashboardPage() {
                   <select
                     value={newPersona}
                     onChange={(e) => setNewPersona(e.target.value)}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900 bg-white"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900 bg-white"
                   >
                     <option value="Elena">Elena (Friendly & Warm)</option>
                     <option value="Marcus">Marcus (Direct & Assertive)</option>
@@ -744,7 +728,7 @@ export default function DashboardPage() {
                     max={5}
                     value={newMaxAttempts}
                     onChange={(e) => setNewMaxAttempts(Number(e.target.value))}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
                   />
                 </div>
 
@@ -758,7 +742,7 @@ export default function DashboardPage() {
                     max={60}
                     value={newRetryInterval}
                     onChange={(e) => setNewRetryInterval(Number(e.target.value))}
-                    className="w-full rounded-xl border border-neutral-300 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
+                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
                   />
                 </div>
               </div>
@@ -774,7 +758,7 @@ export default function DashboardPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-full bg-[#18181b] px-6 py-2 text-xs sm:text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer disabled:opacity-50"
+                  className="rounded-2xl bg-zinc-950 px-6 py-2 text-xs sm:text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? "Scheduling..." : "Schedule Call"}
                 </button>
@@ -786,8 +770,8 @@ export default function DashboardPage() {
 
       {/* CALL ATTEMPTS / HISTORY MODAL */}
       {showHistoryModal && selectedReminderForHistory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-neutral-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-xl bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
               <div>
                 <h3 className="text-lg font-medium text-[#151515]">
@@ -800,7 +784,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => setShowHistoryModal(false)}
-                className="text-neutral-400 hover:text-black transition cursor-pointer"
+                className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 hover:bg-zinc-100 hover:text-black transition cursor-pointer"
               >
                 ✕
               </button>
@@ -813,7 +797,7 @@ export default function DashboardPage() {
                 selectedReminderForHistory.attempts.map((attempt) => (
                   <div
                     key={attempt.id}
-                    className="p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 text-xs space-y-1.5"
+                    className="p-4 bg-zinc-50 rounded-[20px] text-xs space-y-1.5"
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-neutral-900">
@@ -840,7 +824,7 @@ export default function DashboardPage() {
                     </div>
 
                     {attempt.transcript && (
-                      <div className="mt-2 p-2.5 bg-white rounded-xl border border-neutral-200 text-neutral-700 text-[11px]">
+                      <div className="mt-2 p-3 bg-white rounded-2xl border border-zinc-100 text-neutral-700 text-[11px]">
                         <span className="font-semibold text-neutral-900 block mb-1">Transcript:</span>
                         <p className="italic">{attempt.transcript}</p>
                       </div>
@@ -869,10 +853,10 @@ export default function DashboardPage() {
 
       {/* UPGRADE MODAL */}
       {showUpgradeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-neutral-200 text-center">
-            <div className="mx-auto h-12 w-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 mb-4">
-              <Sparkles className="h-6 w-6" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl text-center">
+            <div className="flex justify-center">
+              <AgentMascot size={72} />
             </div>
 
             <h3 className="text-xl font-medium text-[#151515] tracking-tight">
@@ -884,7 +868,7 @@ export default function DashboardPage() {
               Upgrade to a Pro subscription for unlimited phone calling, custom voice personas, and smart retry schedules.
             </p>
 
-            <div className="mt-6 p-4 bg-neutral-50 rounded-2xl border border-neutral-200/80 text-left space-y-2 text-xs">
+            <div className="mt-6 p-4 bg-amber-50/60 rounded-[20px] text-left space-y-2 text-xs">
               <div className="flex items-center gap-2 text-neutral-800">
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                 <span>Unlimited automated voice phone calls</span>
@@ -906,7 +890,7 @@ export default function DashboardPage() {
                   setShowUpgradeModal(false);
                   toast.info("Subscription checkout integration will open here!");
                 }}
-                className="w-full rounded-full bg-[#18181b] px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer"
+                className="w-full rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer"
               >
                 Upgrade to Pro
               </button>

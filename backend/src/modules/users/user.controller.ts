@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import prisma from "../../config/db";
 import { z } from "zod";
+import { toE164 } from "../../utils/phone.utils";
 
 const updateSettingsSchema = z.object({
   timezone: z.string().optional(),
@@ -106,7 +107,28 @@ export class UserController {
       if (callingEndTime) userUpdate.callingEndTime = callingEndTime;
       if (defaultMaxAttempts) userUpdate.defaultMaxAttempts = defaultMaxAttempts;
       if (defaultRetryInterval) userUpdate.defaultRetryInterval = defaultRetryInterval;
-      if (phone) userUpdate.phone = phone;
+      if (phone) {
+        const normalizedPhone = toE164(phone);
+        if (!normalizedPhone) {
+          res.status(400).json({
+            success: false,
+            message: "Please enter a valid phone number including the country code.",
+          });
+          return;
+        }
+        const taken = await prisma.user.findFirst({
+          where: { phone: normalizedPhone, id: { not: userId } },
+        });
+        if (taken) {
+          res.status(409).json({
+            success: false,
+            message: "This phone number is already registered to another account.",
+          });
+          return;
+        }
+        userUpdate.phone = normalizedPhone;
+        userUpdate.isPhoneVerified = false;
+      }
       if (preferredVoice) userUpdate.preferredVoice = preferredVoice;
 
       await prisma.user.update({
