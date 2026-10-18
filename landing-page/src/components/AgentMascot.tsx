@@ -12,8 +12,8 @@ interface AgentMascotProps {
 const AMBER_GLOW = "0 0 6px rgba(255,186,110,1), 0 0 16px rgba(255,150,60,.85), 0 0 28px rgba(255,140,40,.45)";
 
 /**
- * The Remind AI agent: cream shell, glossy black visor, glowing amber eyes with
- * cheek smiles, staggered ear pods and "ringing" signal lines.
+ * The Remind AI agent: cream shell, glossy black visor, glowing amber eyes,
+ * ear pods and "ringing" signal lines.
  * Floats, blinks and glances toward the cursor.
  */
 export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
@@ -120,12 +120,12 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
         {/* tilted head */}
         <div
           className="absolute"
-          style={{ left: s * 0.32, top: s * 0.17, width: s, height: s, transform: "rotate(-12deg)" }}
+          style={{ left: s * 0.3, top: s * 0.17, width: s, height: s }}
         >
           {/* ear pods: left one high, right one low, tucked behind the shell */}
           {[
-            { left: -s * 0.16, top: s * 0.1, h: s * 0.48, shade: "inset 8px -6px 12px rgba(200,140,85,.35)" },
-            { left: s * 0.84, top: s * 0.46, h: s * 0.46, shade: "inset -8px -6px 12px rgba(200,140,85,.35)" },
+            { left: -s * 0.17, top: s * 0.24, h: s * 0.46, shade: "inset 8px -6px 12px rgba(200,140,85,.35)" },
+            { left: s * 0.85, top: s * 0.3, h: s * 0.46, shade: "inset -8px -6px 12px rgba(200,140,85,.35)" },
           ].map((e, i) => (
             <span
               key={i}
@@ -194,14 +194,14 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                 style={{ filter: "blur(1.5px)" }}
               />
 
-              {/* eyes + small cheek smiles, shifted toward the cursor */}
+              {/* eyes, shifted toward the cursor */}
               <g
                 filter={`url(#glow-${id})`}
                 style={{ transform: `translate(${look.x}px, ${look.y}px)`, transition: "transform .2s ease-out" }}
               >
                 {[
-                  { x: 31, y: 34, smile: "M27 59 Q30.5 62 34 59.5" },
-                  { x: 58, y: 39, smile: "M54 64 Q57.5 67 61 64.5" },
+                  { x: 31, y: 37 },
+                  { x: 57, y: 37 },
                 ].map((e, i) => (
                   <g key={i}>
                     <rect
@@ -218,7 +218,6 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                         transition: "transform .09s",
                       }}
                     />
-                    <path d={e.smile} fill="none" stroke="#ffdca6" strokeWidth="2.2" strokeLinecap="round" />
                   </g>
                 ))}
               </g>

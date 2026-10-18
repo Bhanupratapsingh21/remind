@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Volume2 } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Reveal } from "@/components/site/Reveal";
 
 interface VoiceStyleOption {
   name: string;
@@ -87,7 +88,7 @@ export function LanguageAvatarShowcase() {
   return (
     <section id="voices" className="w-full scroll-mt-20 px-3 sm:px-4">
       <div className="mx-auto max-w-[1888px] rounded-[28px] bg-[linear-gradient(180deg,#f7efe4_0%,#f3e7d8_100%)] px-4 py-20 text-center sm:py-28">
-        <div className="mx-auto max-w-4xl">
+        <Reveal className="mx-auto max-w-4xl">
           <div className="flex justify-center">
             <Eyebrow>Persona & voice</Eyebrow>
           </div>
@@ -164,7 +165,7 @@ export function LanguageAvatarShowcase() {
             Multiple languages · 5 voice personas · Ultra-low latency responses
           </p>
           <p className="mt-1 text-[12px] text-zinc-400">All voice personalities are included with your account.</p>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -3,6 +3,7 @@
 import React from "react";
 import { CalendarClock, CheckCircle2, PhoneCall, Volume2 } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Reveal } from "@/components/site/Reveal";
 
 interface FeatureCardProps {
   number: string;
@@ -53,7 +54,7 @@ export function DailyCareSection() {
   return (
     <section id="features" className="w-full scroll-mt-20 px-4 py-24 sm:py-32">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-col justify-between gap-8 pb-12 md:flex-row md:items-end">
+        <Reveal className="flex flex-col justify-between gap-8 pb-12 md:flex-row md:items-end">
           <div>
             <Eyebrow>Real-time accountability</Eyebrow>
             <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
@@ -68,9 +69,9 @@ export function DailyCareSection() {
             <p>Alarms get snoozed into oblivion.</p>
             <p className="text-zinc-900">A direct voice call gets things done.</p>
           </div>
-        </div>
+        </Reveal>
 
-        <div className="grid grid-cols-1 gap-3 rounded-[28px] bg-tray p-3 md:grid-cols-3">
+        <Reveal delay={0.1} className="grid grid-cols-1 gap-3 rounded-[28px] bg-tray p-3 md:grid-cols-3">
           <FeatureCard
             number="01"
             category="Direct call"
@@ -95,7 +96,7 @@ export function DailyCareSection() {
             description="Once you finish the task, speak to confirm. Your dashboard immediately checks it off your list."
             onCardClick={() => speakReminder("Great job! Marked as completed on your dashboard.")}
           />
-        </div>
+        </Reveal>
 
         <p className="mt-8 text-center text-[13px] text-zinc-400">
           Works on any phone number · Configurable quiet hours · Conversational AI

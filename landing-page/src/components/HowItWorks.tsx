@@ -3,6 +3,7 @@
 import React from "react";
 import { CalendarPlus, Mic, PhoneIncoming } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Reveal } from "@/components/site/Reveal";
 
 const STEPS = [
   {
@@ -26,6 +27,7 @@ export function HowItWorks() {
   return (
     <section className="w-full px-4 pb-24 pt-12 sm:pb-32">
       <div className="mx-auto max-w-6xl text-center">
+        <Reveal>
         <div className="flex justify-center">
           <Eyebrow>Simple 3-step flow</Eyebrow>
         </div>
@@ -34,10 +36,11 @@ export function HowItWorks() {
           <br />
           Remind handles the call.
         </h2>
+        </Reveal>
 
         <div className="mt-12 grid grid-cols-1 gap-3 rounded-[28px] bg-tray p-3 text-left md:grid-cols-3">
           {STEPS.map(({ icon: Icon, title, text }, i) => (
-            <div key={title} className="rounded-[22px] bg-white p-6 sm:p-7">
+            <Reveal key={title} delay={i * 0.1} className="rounded-[22px] bg-white p-6 sm:p-7">
               <div className="flex items-center gap-3">
                 <span className="grid h-8 w-8 place-items-center rounded-xl bg-zinc-950 font-mono text-[12px] text-amber-200">
                   {i + 1}
@@ -46,7 +49,7 @@ export function HowItWorks() {
               </div>
               <h3 className="mt-6 text-lg font-medium text-zinc-950">{title}</h3>
               <p className="mt-1.5 font-serif text-[15px] leading-relaxed text-zinc-500">{text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
