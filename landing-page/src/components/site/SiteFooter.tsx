@@ -6,8 +6,8 @@ const COLUMNS = [
   {
     title: "Product",
     links: [
-      { label: "Features", href: "/#features" },
       { label: "How it works", href: "/#how-it-works" },
+      { label: "Features", href: "/#features" },
       { label: "Voices", href: "/#voices" },
       { label: "Pricing", href: "/#pricing" },
       { label: "Mobile app", href: "/#app" },
@@ -22,86 +22,120 @@ const COLUMNS = [
     ],
   },
   {
-    title: "Legal",
+    title: "Resources",
     links: [
-      { label: "Privacy", href: "#" },
-      { label: "Terms", href: "#" },
-      { label: "Contact", href: "mailto:support@remind.app" },
+      { label: "Terms of Use", href: "#" },
+      { label: "Privacy Policy", href: "#" },
+      { label: "Support", href: "#" },
+    ],
+  },
+  {
+    title: "Connect",
+    links: [
+      { label: "X (Twitter)", href: "#" },
+      { label: "Instagram", href: "#" },
+      { label: "LinkedIn", href: "#" },
     ],
   },
 ];
 
-/** Closing call-to-action card plus a proper footer with link columns and credits */
+/** Closing call-to-action card, then a warm footer: aurora band, link columns, giant wordmark */
 export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
   return (
-    <footer id="site-footer" className="px-3 pb-4 sm:px-4">
+    <footer id="site-footer" className="px-4 pb-4">
       {showCta && (
-        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#9cc0e6_0%,#d9e4f0_45%,#f3dcc6_100%)] px-6 py-20 text-center">
-          <div className="pointer-events-none absolute -top-24 right-[20%] h-72 w-96 rounded-full bg-[radial-gradient(circle,rgba(255,206,150,.7),transparent_70%)] blur-2xl" />
-          <div className="relative">
-            <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
-              Stop ignoring notifications.
-              <br />
-              Pick up the call.
-            </h2>
-            <Link
-              href="/signup"
-              className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3.5 text-[15px] font-medium text-white hover:bg-zinc-800"
-            >
-              Get started free <ArrowRight className="h-4 w-4" />
-            </Link>
+        <div className="mx-auto max-w-7xl py-12 sm:py-20">
+          <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#9cc0e6_0%,#d9e4f0_45%,#f3dcc6_100%)] px-6 py-24 text-center sm:py-32">
+            <div className="pointer-events-none absolute -top-24 right-[20%] h-72 w-96 rounded-full bg-[radial-gradient(circle,rgba(255,206,150,.7),transparent_70%)] blur-2xl" />
+            <div className="relative">
+              <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl md:text-6xl">
+                Stop ignoring notifications.
+                <br />
+                Pick up the call.
+              </h2>
+              <p className="mx-auto mt-5 max-w-md font-serif text-[17px] text-zinc-700">
+                Your first reminder call is free. No app, no card, no setup beyond a phone number.
+              </p>
+              <Link
+                href="/signup"
+                className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-7 py-4 text-[15px] font-medium text-white hover:bg-zinc-800"
+              >
+                Get started free <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="mx-auto mt-4 max-w-[1888px] rounded-[28px] bg-white px-6 py-10 sm:px-10 lg:px-14">
-        <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
-          <div>
-            <Wordmark />
-            <p className="mt-3 max-w-xs font-serif text-[15px] leading-relaxed text-zinc-500">
-              The reminder that calls you. An AI agent that rings, listens, and checks things off, so nothing slips.
-            </p>
+      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-[#fbe9dc] text-zinc-950">
+        {/* aurora band: night sky melting into the warm page */}
+        <div
+          aria-hidden
+          className="relative h-48 overflow-hidden bg-[linear-gradient(180deg,#121830_0%,#2a2744_38%,#8d5c5a_66%,#f0c7a9_86%,#fbe9dc_100%)] sm:h-56"
+        >
+          <span className="absolute left-[18%] top-[30%] h-56 w-[36rem] rounded-full bg-[#7aaad9]/50 blur-3xl" />
+          <span className="absolute left-[46%] top-[42%] h-48 w-[30rem] rounded-full bg-[#f6a76a]/70 blur-3xl" />
+          <span className="absolute right-[6%] top-[22%] h-56 w-[32rem] rounded-full bg-[#5b6fb8]/40 blur-3xl" />
+          <span className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,#fbe9dc)]" />
+        </div>
+
+        <div className="px-6 pb-4 pt-6 sm:px-10 lg:px-14">
+          <div className="grid gap-10 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
+            <div>
+              <Wordmark small />
+              <p className="mt-3 max-w-[16rem] font-serif text-[15px] leading-relaxed text-zinc-600">
+                The reminder that calls you.
+              </p>
+            </div>
+
+            {COLUMNS.map((col) => (
+              <div key={col.title}>
+                <p className="text-[13px] text-zinc-500">{col.title}</p>
+                <ul className="mt-3 space-y-2">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
+                      <Link href={l.href} className="text-[14px] text-zinc-900 hover:text-zinc-500">
+                        {l.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          {COLUMNS.map((col) => (
-            <div key={col.title}>
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-zinc-400">{col.title}</p>
-              <ul className="mt-4 space-y-2.5">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    <Link href={l.href} className="text-[14px] text-zinc-700 hover:text-zinc-950">
-                      {l.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <div className="mt-14 flex flex-col gap-2 text-[13px] text-zinc-500 sm:flex-row sm:items-end sm:justify-between">
+            <p>© {new Date().getFullYear()} Remind. All rights reserved.</p>
+            <p>
+              Created & developed by{" "}
+              <a
+                href="https://bpss.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-black"
+              >
+                bpss.in
+              </a>{" "}
+              &{" "}
+              <a
+                href="https://www.rambhardwaj.in/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-800 underline underline-offset-2 hover:text-black"
+              >
+                rambhardwaj.in
+              </a>
+            </p>
+          </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-2 border-t border-zinc-100 pt-6 text-[13px] text-zinc-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} Remind. All rights reserved.</p>
-          <p>
-            Created & developed by{" "}
-            <a
-              href="https://bpss.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-700 underline underline-offset-2 hover:text-black"
-            >
-              bpss.in
-            </a>{" "}
-            &{" "}
-            <a
-              href="https://www.rambhardwaj.in/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-700 underline underline-offset-2 hover:text-black"
-            >
-              rambhardwaj.in
-            </a>
-          </p>
-        </div>
+        {/* giant wordmark, cropped by the card's bottom edge */}
+        <p
+          aria-hidden
+          className="pointer-events-none -mb-[0.26em] select-none text-right font-sans text-[clamp(6rem,22vw,19rem)] font-bold leading-[0.85] tracking-[-0.06em] text-zinc-950 pr-4 sm:pr-8"
+        >
+          remind
+        </p>
       </div>
     </footer>
   );

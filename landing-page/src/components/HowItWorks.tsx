@@ -26,7 +26,7 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section className="w-full px-4 pb-24 pt-12 sm:pb-32">
-      <div className="mx-auto max-w-6xl text-center">
+      <div className="mx-auto max-w-7xl text-center">
         <Reveal>
         <div className="flex justify-center">
           <Eyebrow>Simple 3-step flow</Eyebrow>

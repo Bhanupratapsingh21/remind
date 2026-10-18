@@ -17,7 +17,7 @@ export function QuietHoursSection() {
 
   return (
     <section className="w-full px-4 py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
         <Reveal>
           <Eyebrow>Call preferences & control</Eyebrow>
           <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">

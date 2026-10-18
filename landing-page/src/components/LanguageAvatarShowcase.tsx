@@ -86,8 +86,8 @@ export function LanguageAvatarShowcase() {
   };
 
   return (
-    <section id="voices" className="w-full scroll-mt-20 px-3 sm:px-4">
-      <div className="mx-auto max-w-[1888px] rounded-[28px] bg-[linear-gradient(180deg,#f7efe4_0%,#f3e7d8_100%)] px-4 py-20 text-center sm:py-28">
+    <section id="voices" className="w-full scroll-mt-20 px-4">
+      <div className="mx-auto max-w-7xl rounded-[28px] bg-[linear-gradient(180deg,#f7efe4_0%,#f3e7d8_100%)] px-4 py-20 text-center sm:py-28">
         <Reveal className="mx-auto max-w-4xl">
           <div className="flex justify-center">
             <Eyebrow>Persona & voice</Eyebrow>

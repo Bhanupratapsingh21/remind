@@ -31,7 +31,7 @@ const PLANS = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="mx-auto max-w-4xl scroll-mt-20 px-4 pb-24 text-center sm:pb-32">
+    <section id="pricing" className="mx-auto max-w-7xl scroll-mt-20 px-4 pb-24 text-center sm:pb-32">
       <Reveal>
       <div className="flex justify-center">
         <Eyebrow>Pricing</Eyebrow>

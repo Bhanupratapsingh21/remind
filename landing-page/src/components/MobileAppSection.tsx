@@ -26,8 +26,8 @@ function StoreBadge({ store, note }: { store: string; note: string }) {
 
 export function MobileAppSection() {
   return (
-    <section id="app" className="scroll-mt-20 px-3 pb-24 sm:px-4 sm:pb-32">
-      <div className="relative mx-auto grid max-w-[1888px] items-center gap-10 overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#a9c8ea_0%,#d8e3ef_45%,#f3dcc6_100%)] px-6 py-16 sm:px-12 md:grid-cols-2 lg:px-20">
+    <section id="app" className="scroll-mt-20 px-4 pb-24 sm:pb-32">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,#a9c8ea_0%,#d8e3ef_45%,#f3dcc6_100%)] px-6 py-16 sm:px-12 md:grid-cols-2 lg:px-20">
         <div className="pointer-events-none absolute -top-24 right-[30%] h-72 w-96 rounded-full bg-[radial-gradient(circle,rgba(255,206,150,.7),transparent_70%)] blur-2xl" />
 
         <Reveal className="relative">

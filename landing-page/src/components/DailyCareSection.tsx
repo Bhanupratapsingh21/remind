@@ -53,7 +53,7 @@ export function DailyCareSection() {
 
   return (
     <section id="features" className="w-full scroll-mt-20 px-4 py-24 sm:py-32">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <Reveal className="flex flex-col justify-between gap-8 pb-12 md:flex-row md:items-end">
           <div>
             <Eyebrow>Real-time accountability</Eyebrow>
