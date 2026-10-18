@@ -10,6 +10,8 @@ router.post("/verify-otp", AuthController.verifyOtp);
 router.get("/check-username", AuthController.checkUsername);
 router.post("/register", AuthController.register);
 router.post("/login", AuthController.login);
+router.post("/login/send-otp", AuthController.sendLoginOtp);
+router.post("/login/verify-otp", AuthController.verifyLoginOtp);
 router.post("/refresh", AuthController.refresh);
 router.post("/logout", AuthController.logout);
 

@@ -37,6 +37,15 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+const loginOtpSendSchema = z.object({
+  identifier: z.string().min(3, "Email or username is required"),
+});
+
+const loginOtpVerifySchema = z.object({
+  identifier: z.string().min(3, "Email or username is required"),
+  code: z.string().length(6, "Code must be exactly 6 digits"),
+});
+
 const loginSchema = z.object({
   identifier: z.string().min(3, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
@@ -376,6 +385,127 @@ export class AuthController {
         : error?.message || "Login failed";
 
       res.status(500).json({ success: false, message });
+    }
+  }
+
+  /** Find a user by email or username (case-insensitive) */
+  private static findByIdentifier(identifier: string) {
+    const cleanId = identifier.trim().toLowerCase();
+    return prisma.user.findFirst({
+      where: {
+        OR: [{ email: cleanId }, { username: { equals: cleanId, mode: "insensitive" } }],
+      },
+    });
+  }
+
+  /** Issue access + refresh cookies and respond with the public user shape */
+  private static async respondWithSession(
+    res: Response,
+    user: NonNullable<Awaited<ReturnType<typeof AuthController.findByIdentifier>>>,
+    message: string
+  ) {
+    const accessToken = TokenService.generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      phone: user.phone,
+    });
+    const refreshToken = await TokenService.createRefreshToken(user.id);
+    TokenService.setAuthCookies(res, accessToken, refreshToken);
+
+    res.status(200).json({
+      success: true,
+      message,
+      data: {
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          phone: user.phone,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          isOnboarded: user.isOnboarded,
+          plan: user.plan,
+          trialEndsAt: user.trialEndsAt,
+          maxReminders: user.maxReminders,
+          preferredVoice: user.preferredVoice,
+          timezone: user.timezone,
+          createdAt: user.createdAt,
+        },
+      },
+    });
+  }
+
+  /**
+   * Passwordless login, step 1: email a one-time code to the account's address
+   * POST /api/auth/login/send-otp
+   */
+  public static async sendLoginOtp(req: Request, res: Response): Promise<void> {
+    const parsed = loginOtpSendSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, errors: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      const user = await AuthController.findByIdentifier(parsed.data.identifier);
+      if (!user) {
+        res.status(404).json({ success: false, message: "No account found with this email or username." });
+        return;
+      }
+
+      const code = await OtpService.createOtp(user.email, "EMAIL");
+
+      // Only reveal a masked address so a username lookup does not leak the full email
+      const [local, domain] = user.email.split("@");
+      const maskedEmail = `${local.slice(0, 2)}${"*".repeat(Math.max(1, local.length - 2))}@${domain}`;
+
+      res.status(200).json({
+        success: true,
+        message: `Login code sent to ${maskedEmail}`,
+        maskedEmail,
+        ...(process.env.NODE_ENV !== "production" ? { debugOtp: code } : {}),
+      });
+    } catch (error) {
+      console.error("Error sending login OTP:", error);
+      res.status(500).json({ success: false, message: "Failed to send login code" });
+    }
+  }
+
+  /**
+   * Passwordless login, step 2: verify the code and start a session
+   * POST /api/auth/login/verify-otp
+   */
+  public static async verifyLoginOtp(req: Request, res: Response): Promise<void> {
+    const parsed = loginOtpVerifySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, errors: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      const user = await AuthController.findByIdentifier(parsed.data.identifier);
+      if (!user) {
+        res.status(404).json({ success: false, message: "No account found with this email or username." });
+        return;
+      }
+
+      const isValid = await OtpService.verifyOtp(user.email, parsed.data.code, "EMAIL");
+      if (!isValid) {
+        res.status(400).json({ success: false, message: "Invalid or expired code. Please try again." });
+        return;
+      }
+
+      // Receiving the code proves the inbox, so the email counts as verified from here on
+      const freshUser = user.isEmailVerified
+        ? user
+        : await prisma.user.update({ where: { id: user.id }, data: { isEmailVerified: true } });
+
+      await AuthController.respondWithSession(res, freshUser, "Logged in successfully");
+    } catch (error: any) {
+      console.error("Error during OTP login:", error);
+      res.status(500).json({ success: false, message: error?.message || "Login failed" });
     }
   }
 
