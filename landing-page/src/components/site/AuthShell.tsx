@@ -1,6 +1,5 @@
 "use client";
 
-import { AgentMascot } from "@/components/AgentMascot";
 import { Aurora } from "./Aurora";
 
 interface AuthShellProps {
@@ -15,7 +14,7 @@ interface AuthShellProps {
 
 /**
  * Split layout for login / signup / onboarding. Left: the footer's aurora panel with the
- * agent and a giant cropped wordmark (hidden on small screens). Right: a white form card
+ * tagline and a giant cropped wordmark (hidden on small screens). Right: a white form card
  * that runs flush to the right edge of the window like a strap.
  */
 export function AuthShell({ topRight, footer, tagline = "Your reminders, now with a voice.", children }: AuthShellProps) {
@@ -24,20 +23,16 @@ export function AuthShell({ topRight, footer, tagline = "Your reminders, now wit
       {/* Aurora panel */}
       <aside className="relative hidden overflow-hidden rounded-[28px] bg-peach text-zinc-950 lg:flex lg:flex-col">
         <Aurora className="flex flex-1 flex-col items-center justify-center px-10 py-16 text-center">
-          <AgentMascot size={150} />
-          <p className="mt-6 max-w-sm font-display text-4xl leading-[1.1] tracking-[-0.03em] text-white">{tagline}</p>
+          <p className="max-w-sm font-display text-4xl leading-[1.1] tracking-[-0.03em] text-white">{tagline}</p>
           <p className="mt-3 max-w-xs font-serif text-[16px] text-white/70">
             It calls, it listens, and it checks things off for you.
           </p>
         </Aurora>
 
-        <div className="flex items-end justify-between px-8 pt-6">
-          <p className="pb-6 text-[12px] text-zinc-600">Calls only inside your calling hours. Never while you sleep.</p>
-        </div>
         {/* giant wordmark, cropped by the panel's bottom edge */}
         <p
           aria-hidden
-          className="pointer-events-none -mb-[0.26em] select-none text-right font-sans text-[clamp(6rem,14vw,13rem)] font-bold leading-[0.85] tracking-[-0.06em] text-zinc-950 pr-5"
+          className="pointer-events-none -mb-[0.26em] mt-6 select-none text-right font-sans text-[clamp(6rem,14vw,13rem)] font-bold leading-[0.85] tracking-[-0.06em] text-zinc-950 pr-5"
         >
           remind
         </p>
@@ -48,8 +43,6 @@ export function AuthShell({ topRight, footer, tagline = "Your reminders, now wit
         <div className="flex min-h-9 items-center justify-end">{topRight}</div>
 
         <div className="mx-auto my-auto w-full max-w-xl py-12">
-          {/* the agent greets you on small screens, where the aurora panel is hidden */}
-          <AgentMascot size={64} className="-ml-3 mb-2 lg:hidden" />
           {children}
         </div>
 
