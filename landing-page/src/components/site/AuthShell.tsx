@@ -20,19 +20,21 @@ interface AuthShellProps {
 export function AuthShell({ topRight, footer, tagline = "Your reminders, now with a voice.", children }: AuthShellProps) {
   return (
     <div className="grid min-h-screen bg-canvas p-3 text-ink antialiased selection:bg-amber-100 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-4 lg:pr-0">
-      {/* Aurora panel */}
-      <aside className="relative hidden overflow-hidden rounded-[28px] bg-peach text-zinc-950 lg:flex lg:flex-col">
-        <Aurora className="flex flex-1 flex-col items-center justify-center px-10 py-16 text-center">
+      {/* Aurora panel: gradient fills the whole panel, tagline sits at its exact centre */}
+      <aside className="relative hidden overflow-hidden rounded-[28px] bg-peach text-zinc-950 lg:block">
+        <div className="absolute inset-0">
+          <Aurora className="h-full" />
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-10 text-center">
           <p className="max-w-sm font-display text-4xl leading-[1.1] tracking-[-0.03em] text-white">{tagline}</p>
           <p className="mt-3 max-w-xs font-serif text-[16px] text-white/70">
             It calls, it listens, and it checks things off for you.
           </p>
-        </Aurora>
-
+        </div>
         {/* giant wordmark, cropped by the panel's bottom edge */}
         <p
           aria-hidden
-          className="pointer-events-none -mb-[0.26em] mt-6 select-none text-right font-sans text-[clamp(6rem,14vw,13rem)] font-bold leading-[0.85] tracking-[-0.06em] text-zinc-950 pr-5"
+          className="pointer-events-none absolute -bottom-[0.26em] right-5 select-none font-sans text-[clamp(6rem,14vw,13rem)] font-bold leading-[0.85] tracking-[-0.06em] text-zinc-950"
         >
           remind
         </p>
