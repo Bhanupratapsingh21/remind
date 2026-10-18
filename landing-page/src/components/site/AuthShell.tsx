@@ -22,9 +22,9 @@ export function AuthShell({ topRight, footer, tagline = "Your reminders, now wit
   return (
     <div className="grid min-h-screen bg-canvas p-3 text-ink antialiased selection:bg-amber-100 sm:p-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-4">
       {/* Sky panel */}
-      <aside className="relative hidden overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#7aaad9,#f1d9c3)] lg:block">
+      <aside className="relative hidden overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#3f5f99,#f4d4b8)] lg:block">
         <div className="absolute inset-0">
-          <CloudShader skyTopColor="#7aaad9" skyBottomColor="#f1d9c3" cloudColor="#fff8ef" speed={0.6} count={5} />
+          <CloudShader skyTopColor="#3f5f99" skyBottomColor="#f4d4b8" cloudColor="#fff1e4" speed={0.6} count={5} />
         </div>
         <div className="relative flex h-full flex-col justify-between p-10">
           <span className="w-fit rounded-2xl bg-white/70 px-3 py-1.5 backdrop-blur">

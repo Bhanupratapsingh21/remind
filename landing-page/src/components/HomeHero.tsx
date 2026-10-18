@@ -15,9 +15,9 @@ import { SiteNav } from "@/components/site/SiteNav";
 
 /* Warm sky that matches the agent's amber glow */
 const SKY = {
-  skyTopColor: "#7aaad9",
-  skyBottomColor: "#f1d9c3",
-  cloudColor: "#fff8ef",
+  skyTopColor: "#3f5f99",
+  skyBottomColor: "#f4d4b8",
+  cloudColor: "#fff1e4",
 };
 
 function AnimatedHeadline() {
@@ -123,7 +123,7 @@ export function HomeHero() {
     <div id="hero">
       <SiteNav />
       <section className="px-3 sm:px-4">
-        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#7aaad9,#f1d9c3)]">
+        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#3f5f99,#f4d4b8)]">
           {/* WebGL sky; the gradient above shows if WebGL is unavailable */}
           <div className="absolute inset-0">
             <CloudShader {...SKY} speed={0.8} count={6} />

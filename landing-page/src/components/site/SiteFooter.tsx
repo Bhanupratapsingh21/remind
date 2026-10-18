@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Wordmark } from "./SiteNav";
+import { Aurora } from "./Aurora";
 
 const COLUMNS = [
   {
@@ -39,45 +40,31 @@ const COLUMNS = [
   },
 ];
 
-/** Closing call-to-action card, then a warm footer: aurora band, link columns, giant wordmark */
+/** Footer: the closing call-to-action sits in a night-sky aurora band that melts into a peach card with link columns and a giant wordmark */
 export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
   return (
-    <footer id="site-footer" className="px-4 pb-4">
-      {showCta && (
-        <div className="mx-auto max-w-7xl py-12 sm:py-20">
-          <div className="relative overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#9cc0e6_0%,#d9e4f0_45%,#f3dcc6_100%)] px-6 py-24 text-center sm:py-32">
-            <div className="pointer-events-none absolute -top-24 right-[20%] h-72 w-96 rounded-full bg-[radial-gradient(circle,rgba(255,206,150,.7),transparent_70%)] blur-2xl" />
-            <div className="relative">
-              <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl md:text-6xl">
+    <footer id="site-footer" className="px-4 pb-4 pt-12 sm:pt-20">
+      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-peach text-zinc-950">
+        <Aurora className={showCta ? "min-h-[26rem] sm:min-h-[30rem]" : "h-48 sm:h-56"}>
+          {showCta && (
+            <div className="flex min-h-[26rem] flex-col items-center justify-center px-6 pb-24 pt-16 text-center sm:min-h-[30rem]">
+              <h2 className="font-display text-4xl tracking-[-0.03em] text-white sm:text-5xl md:text-6xl">
                 Stop ignoring notifications.
                 <br />
                 Pick up the call.
               </h2>
-              <p className="mx-auto mt-5 max-w-md font-serif text-[17px] text-zinc-700">
+              <p className="mx-auto mt-5 max-w-md font-serif text-[17px] text-white/70">
                 Your first reminder call is free. No app, no card, no setup beyond a phone number.
               </p>
               <Link
                 href="/signup"
-                className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-7 py-4 text-[15px] font-medium text-white hover:bg-zinc-800"
+                className="mt-9 inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-4 text-[15px] font-medium text-zinc-950 shadow-[0_20px_50px_-20px_rgba(246,167,106,.8)] hover:bg-amber-50"
               >
                 Get started free <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </div>
-        </div>
-      )}
-
-      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-[#fbe9dc] text-zinc-950">
-        {/* aurora band: night sky melting into the warm page */}
-        <div
-          aria-hidden
-          className="relative h-48 overflow-hidden bg-[linear-gradient(180deg,#121830_0%,#2a2744_38%,#8d5c5a_66%,#f0c7a9_86%,#fbe9dc_100%)] sm:h-56"
-        >
-          <span className="absolute left-[18%] top-[30%] h-56 w-[36rem] rounded-full bg-[#7aaad9]/50 blur-3xl" />
-          <span className="absolute left-[46%] top-[42%] h-48 w-[30rem] rounded-full bg-[#f6a76a]/70 blur-3xl" />
-          <span className="absolute right-[6%] top-[22%] h-56 w-[32rem] rounded-full bg-[#5b6fb8]/40 blur-3xl" />
-          <span className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent,#fbe9dc)]" />
-        </div>
+          )}
+        </Aurora>
 
         <div className="px-6 pb-4 pt-6 sm:px-10 lg:px-14">
           <div className="grid gap-10 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">

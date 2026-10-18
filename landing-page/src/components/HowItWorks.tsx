@@ -42,7 +42,7 @@ export function HowItWorks() {
           {STEPS.map(({ icon: Icon, title, text }, i) => (
             <Reveal key={title} delay={i * 0.1} className="rounded-[22px] bg-white p-6 sm:p-7">
               <div className="flex items-center gap-3">
-                <span className="grid h-8 w-8 place-items-center rounded-xl bg-zinc-950 font-mono text-[12px] text-amber-200">
+                <span className="grid h-8 w-8 place-items-center rounded-xl bg-night font-mono text-[12px] text-amber-200">
                   {i + 1}
                 </span>
                 <Icon className="h-5 w-5 text-zinc-400" />

@@ -12,8 +12,10 @@
   --font-heading: var(--font-instrument), "Helvetica Neue", Arial, sans-serif;
   --font-serif: var(--font-source-serif), Georgia, serif;
   /* Remind design tokens: off-white page, grey card tray, warm amber accent */
-  --color-canvas: #fbfbfb;
-  --color-tray: #ececec;
+  --color-canvas: #f8f2ea;
+  --color-tray: #efe4d8;
+  --color-peach: #fbe9dc;
+  --color-night: #121830;
   --color-ink: #151515;
   --font-mono: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -129,7 +131,7 @@
   }
   body {
     color: #151515;
-    background-color: #fbfbfb;
+    background-color: #f8f2ea;
     font-family: "Helvetica Neue", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   html {

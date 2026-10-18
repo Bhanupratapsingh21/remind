@@ -46,7 +46,7 @@ export function PricingSection() {
         {PLANS.map((p) => (
           <div
             key={p.name}
-            className={`flex flex-col rounded-[22px] p-7 ${p.dark ? "bg-zinc-950 text-white" : "bg-white text-zinc-950"}`}
+            className={`flex flex-col rounded-[22px] p-7 ${p.dark ? "bg-[linear-gradient(160deg,#121830_0%,#262a4d_55%,#4a3550_100%)] text-white" : "bg-white text-zinc-950"}`}
           >
             <p className={`text-[14px] ${p.dark ? "text-amber-200" : "text-zinc-500"}`}>{p.name}</p>
             <p className="mt-2 font-display text-5xl tracking-tight">

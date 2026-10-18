@@ -24,7 +24,7 @@ export function Wordmark({ href = "/", small = false }: { href?: string; small?:
 /** Marketing nav: wordmark, links, Login / Sign Up (or a custom right slot) */
 export function SiteNav({ right, showLinks = true }: { right?: React.ReactNode; showLinks?: boolean }) {
   return (
-    <header className="sticky top-0 z-50 bg-canvas/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 bg-canvas/80 backdrop-blur-md">
       <nav className="mx-auto flex h-[68px] max-w-[1880px] items-center justify-between px-5 sm:px-8">
         <div className="flex items-center gap-10">
           <Wordmark />
