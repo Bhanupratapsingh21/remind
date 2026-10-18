@@ -1,18 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ArrowDown,
-  ArrowRight,
-  BellRing,
   Clock,
-  Moon,
   PhoneCall,
   PhoneIncoming,
-  Smartphone,
-  Sparkles,
 } from "lucide-react";
 import { CloudShader } from "@/components/ui/cloud-shader";
 import { AgentMascot } from "@/components/AgentMascot";
@@ -21,42 +15,23 @@ import { SiteNav } from "@/components/site/SiteNav";
 
 /* Warm sky that matches the agent's amber glow */
 const SKY = {
-  skyTopColor: "#7aaad9",
-  skyBottomColor: "#f1d9c3",
-  cloudColor: "#fff8ef",
+  skyTopColor: "#3f5f99",
+  skyBottomColor: "#f4d4b8",
+  cloudColor: "#fff1e4",
 };
-
-const MODES = [
-  {
-    icon: BellRing,
-    label: "Ring Mode",
-    text: "Your phone rings at the exact time and a short voice reads your reminder. Free forever, no app needed.",
-  },
-  {
-    icon: PhoneCall,
-    label: "AI Call Mode",
-    text: "A reminder you can't simply swipe away. Your AI agent calls, listens, and marks it done or calls back later, all by voice.",
-  },
-  {
-    icon: Moon,
-    label: "Quiet Hours",
-    text: "Your agent never calls while you sleep. Anything due at night waits politely for your morning window.",
-  },
-];
 
 function AnimatedHeadline() {
   const words = ["Remind.", "Ring.", "Done."];
   return (
     <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-display text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
       {words.map((w, i) => (
-        <motion.span
+        <span
           key={w}
-          initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.7, delay: 0.15 + i * 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="animate-[rise_.7s_cubic-bezier(.22,1,.36,1)_both]"
+          style={{ animationDelay: `${0.15 + i * 0.22}s` }}
         >
           {w}
-        </motion.span>
+        </span>
       ))}
     </h1>
   );
@@ -144,73 +119,32 @@ function DeviceMock() {
 }
 
 export function HomeHero() {
-  const [mode, setMode] = useState(1);
-
   return (
-    <div>
+    <div id="hero">
       <SiteNav />
       <section className="px-3 sm:px-4">
-        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#7aaad9,#f1d9c3)]">
+        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#3f5f99,#f4d4b8)]">
           {/* WebGL sky; the gradient above shows if WebGL is unavailable */}
           <div className="absolute inset-0">
             <CloudShader {...SKY} speed={0.8} count={6} />
           </div>
 
-          <div className="relative px-4 pt-12 text-center">
-            <motion.a
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-zinc-950 py-1.5 pl-1.5 pr-3.5 text-[13px] text-white shadow-[0_8px_24px_-8px_rgba(0,0,0,.45)]"
-            >
-              <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-900">NEW</span>
-              <span className="font-medium">Snooze by voice is here</span>
-              <span className="hidden text-zinc-400 sm:inline">See what&apos;s new</span>
-              <ArrowRight className="h-3.5 w-3.5 text-zinc-300" />
-            </motion.a>
-
+          <div className="relative px-4 pt-14 text-center">
             {/* the agent */}
-            <div className="mt-6 flex justify-center">
+            <div className="flex justify-center">
               <AgentMascot size={130} />
             </div>
 
-            {/* mode switcher */}
-            <div className="relative mx-auto mt-4 w-fit">
-              <div className="flex flex-wrap justify-center gap-0.5 rounded-2xl bg-white/55 p-1 backdrop-blur-md">
-                {MODES.map(({ icon: Icon, label }, i) => (
-                  <button
-                    key={label}
-                    onClick={() => setMode(i)}
-                    className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[13px] transition-colors ${
-                      mode === i ? "bg-white text-zinc-900 shadow-sm" : "text-zinc-600 hover:text-zinc-900"
-                    }`}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-8">
+            <div className="mt-6">
               <AnimatedHeadline />
             </div>
 
-            <div className="mx-auto mt-5 min-h-[96px] max-w-[600px]">
-              <AnimatePresence mode="wait">
-                <motion.p
-                  key={mode}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={{ duration: 0.25 }}
-                  className="font-serif text-[18px] leading-[1.6] text-zinc-700 sm:text-[20px]"
-                >
-                  {MODES[mode].text}
-                </motion.p>
-              </AnimatePresence>
-            </div>
+            <p className="mx-auto mt-6 max-w-[600px] font-serif text-[18px] leading-[1.6] text-zinc-800 sm:text-[20px]">
+              A reminder you can&apos;t simply swipe away. Your AI agent calls, listens, and marks it done or calls back
+              later, all by voice.
+            </p>
 
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="/signup"
                 className="flex items-center gap-2.5 rounded-xl border border-amber-300 bg-gradient-to-b from-[#fff8ee] to-[#fde6c8] px-6 py-3.5 text-[16px] font-medium text-zinc-900 shadow-[inset_0_1px_0_rgba(255,255,255,.9),0_8px_24px_-10px_rgba(234,140,40,.6)] hover:to-[#fbdcb4]"
@@ -229,19 +163,13 @@ export function HomeHero() {
               </a>
             </div>
 
-            <p className="mt-7 flex flex-wrap items-center justify-center gap-1.5 text-[14px] text-zinc-700">
-              <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-              Ignoring notifications?
+            <p className="mt-7 text-[14px] text-zinc-700">
+              Ignoring notifications?{" "}
               <Link href="/signup" className="text-zinc-950 underline underline-offset-2">
                 Try a call instead
               </Link>
-              <ArrowRight className="h-3.5 w-3.5" />
             </p>
-            <p className="mt-3 flex items-center justify-center gap-3 text-[14px] text-zinc-600">
-              Works on any phone
-              <Smartphone className="h-4 w-4" />
-              <PhoneCall className="h-4 w-4" />
-            </p>
+            <p className="mt-3 text-[14px] text-zinc-600">Works on any phone. No app needed.</p>
 
             <DeviceMock />
           </div>

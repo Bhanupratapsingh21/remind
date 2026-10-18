@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { Volume2 } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Aurora } from "@/components/site/Aurora";
+import { Reveal } from "@/components/site/Reveal";
 
 interface VoiceStyleOption {
   name: string;
@@ -85,9 +87,10 @@ export function LanguageAvatarShowcase() {
   };
 
   return (
-    <section id="voices" className="w-full scroll-mt-20 px-3 sm:px-4">
-      <div className="mx-auto max-w-[1888px] rounded-[28px] bg-[linear-gradient(180deg,#f7efe4_0%,#f3e7d8_100%)] px-4 py-20 text-center sm:py-28">
-        <div className="mx-auto max-w-4xl">
+    <section id="voices" className="w-full scroll-mt-20 px-4">
+      <div className="mx-auto max-w-7xl overflow-hidden rounded-[28px] bg-peach text-center">
+        <Aurora className="h-36 sm:h-44" />
+        <Reveal className="mx-auto max-w-4xl px-4 pb-20 pt-4 sm:pb-28">
           <div className="flex justify-center">
             <Eyebrow>Persona & voice</Eyebrow>
           </div>
@@ -112,7 +115,7 @@ export function LanguageAvatarShowcase() {
                   className={`flex cursor-pointer select-none items-center gap-1.5 rounded-full px-4 py-2 text-[13px] transition-all ${
                     isSelected
                       ? "bg-zinc-950 font-medium text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,.5)]"
-                      : "bg-white/70 text-zinc-600 hover:bg-white hover:text-zinc-950"
+                      : "bg-white/60 text-zinc-600 hover:bg-white hover:text-zinc-950"
                   }`}
                 >
                   <span>{persona.name}</span>
@@ -164,7 +167,7 @@ export function LanguageAvatarShowcase() {
             Multiple languages · 5 voice personas · Ultra-low latency responses
           </p>
           <p className="mt-1 text-[12px] text-zinc-400">All voice personalities are included with your account.</p>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

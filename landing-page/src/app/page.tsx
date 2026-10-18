@@ -4,6 +4,7 @@ import { HomeHero } from "@/components/HomeHero";
 import { DailyCareSection } from "@/components/DailyCareSection";
 import { LanguageAvatarShowcase } from "@/components/LanguageAvatarShowcase";
 import { QuietHoursSection } from "@/components/QuietHoursSection";
+import { MobileAppSection } from "@/components/MobileAppSection";
 import { HowItWorks } from "@/components/HowItWorks";
 import { PricingSection } from "@/components/PricingSection";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -24,6 +25,9 @@ export default function LandingPage() {
         {/* CALL PREFERENCES & CONTROL */}
         <QuietHoursSection />
 
+        {/* MOBILE APP */}
+        <MobileAppSection />
+
         {/* HOW IT WORKS */}
         <div id="how-it-works" className="scroll-mt-20">
           <HowItWorks />
@@ -33,6 +37,7 @@ export default function LandingPage() {
         <PricingSection />
       </main>
 
+      {/* CTA lives inside the footer's aurora band */}
       <SiteFooter />
     </div>
   );

@@ -12,8 +12,8 @@ interface AgentMascotProps {
 const AMBER_GLOW = "0 0 6px rgba(255,186,110,1), 0 0 16px rgba(255,150,60,.85), 0 0 28px rgba(255,140,40,.45)";
 
 /**
- * The Remind AI agent: cream shell, glossy black visor, glowing amber eyes with
- * cheek smiles, staggered ear pods and "ringing" signal lines.
+ * The Remind AI agent: cream shell, glossy black visor, glowing amber eyes,
+ * ear pods and "ringing" signal lines.
  * Floats, blinks and glances toward the cursor.
  */
 export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
@@ -120,12 +120,12 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
         {/* tilted head */}
         <div
           className="absolute"
-          style={{ left: s * 0.32, top: s * 0.17, width: s, height: s, transform: "rotate(-12deg)" }}
+          style={{ left: s * 0.3, top: s * 0.17, width: s, height: s }}
         >
           {/* ear pods: left one high, right one low, tucked behind the shell */}
           {[
-            { left: -s * 0.16, top: s * 0.1, h: s * 0.48, shade: "inset 8px -6px 12px rgba(200,140,85,.35)" },
-            { left: s * 0.84, top: s * 0.46, h: s * 0.46, shade: "inset -8px -6px 12px rgba(200,140,85,.35)" },
+            { left: -s * 0.17, top: s * 0.24, h: s * 0.46, shade: "inset 8px -6px 12px rgba(200,140,85,.35)" },
+            { left: s * 0.85, top: s * 0.3, h: s * 0.46, shade: "inset -8px -6px 12px rgba(200,140,85,.35)" },
           ].map((e, i) => (
             <span
               key={i}
@@ -167,9 +167,8 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
             <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
               <defs>
                 <filter id={`glow-${id}`} x="-60%" y="-60%" width="220%" height="220%">
-                  <feGaussianBlur stdDeviation="2.4" result="b" />
+                  <feGaussianBlur stdDeviation="1.6" result="b" />
                   <feMerge>
-                    <feMergeNode in="b" />
                     <feMergeNode in="b" />
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
@@ -184,32 +183,33 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                 </linearGradient>
               </defs>
 
-              {/* glossy highlight along the top-left of the visor */}
-              <path
-                d="M14 46 A38 38 0 0 1 50 11"
-                fill="none"
-                stroke={`url(#gloss-${id})`}
-                strokeWidth="5"
-                strokeLinecap="round"
+              {/* soft specular highlight, top-left of the visor */}
+              <ellipse
+                cx="30"
+                cy="24"
+                rx="13"
+                ry="5"
+                fill={`url(#gloss-${id})`}
+                transform="rotate(-38 30 24)"
+                style={{ filter: "blur(1.5px)" }}
               />
-              <ellipse cx="30" cy="22" rx="7" ry="3" fill="#fff" opacity=".18" transform="rotate(-35 30 22)" />
 
-              {/* eyes + cheek smiles, shifted toward the cursor */}
+              {/* eyes, shifted toward the cursor */}
               <g
                 filter={`url(#glow-${id})`}
                 style={{ transform: `translate(${look.x}px, ${look.y}px)`, transition: "transform .2s ease-out" }}
               >
                 {[
-                  { x: 31, y: 33, smile: "M24 57 Q28 60.5 32 57" },
-                  { x: 59, y: 38, smile: "M52 62 Q56 65.5 60 62" },
+                  { x: 31, y: 37 },
+                  { x: 57, y: 37 },
                 ].map((e, i) => (
                   <g key={i}>
                     <rect
                       x={e.x}
                       y={e.y}
-                      width="11"
-                      height="21"
-                      rx="5.5"
+                      width="12"
+                      height="20"
+                      rx="6"
                       fill={`url(#eye-${id})`}
                       style={{
                         transformBox: "fill-box",
@@ -218,7 +218,6 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                         transition: "transform .09s",
                       }}
                     />
-                    <path d={e.smile} fill="none" stroke="#ffd59a" strokeWidth="2.6" strokeLinecap="round" />
                   </g>
                 ))}
               </g>

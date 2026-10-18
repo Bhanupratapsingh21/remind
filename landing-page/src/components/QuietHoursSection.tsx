@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Check, Moon } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Reveal } from "@/components/site/Reveal";
 
 const FEATURES = [
   "Calls hold silently until your morning start time.",
@@ -16,11 +17,11 @@ export function QuietHoursSection() {
 
   return (
     <section className="w-full px-4 py-24 sm:py-32">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
-        <div>
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
+        <Reveal>
           <Eyebrow>Call preferences & control</Eyebrow>
           <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
-            Total peace when you sleep.
+            Peace when you sleep.
             <br />
             Focus when you work.
           </h2>
@@ -28,13 +29,13 @@ export function QuietHoursSection() {
             Configure quiet windows, customize snooze intervals, and set retry limits so Remind respects your calendar and
             personal space.
           </p>
-        </div>
+        </Reveal>
 
-        <div className="rounded-[28px] bg-[linear-gradient(160deg,#1d2140_0%,#2b2f55_55%,#4a3f5c_100%)] p-3">
+        <Reveal delay={0.12} className="rounded-[28px] bg-[linear-gradient(160deg,#9cc0e6_0%,#d9e4f0_50%,#f3dcc6_100%)] p-3">
           <div className="rounded-[22px] bg-white p-6 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-indigo-50 text-indigo-500">
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 text-amber-600">
                   <Moon className="h-5 w-5" />
                 </span>
                 <div>
@@ -71,7 +72,7 @@ export function QuietHoursSection() {
               ))}
             </ul>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

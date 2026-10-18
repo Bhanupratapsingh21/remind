@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
+import { Reveal } from "@/components/site/Reveal";
 
 // TODO: replace the Pro price with the real one before launch
 const PLANS = [
@@ -30,7 +31,8 @@ const PLANS = [
 
 export function PricingSection() {
   return (
-    <section id="pricing" className="mx-auto max-w-4xl scroll-mt-20 px-4 pb-24 text-center sm:pb-32">
+    <section id="pricing" className="mx-auto max-w-7xl scroll-mt-20 px-4 pb-24 text-center sm:pb-32">
+      <Reveal>
       <div className="flex justify-center">
         <Eyebrow>Pricing</Eyebrow>
       </div>
@@ -38,12 +40,13 @@ export function PricingSection() {
       <p className="mx-auto mt-4 max-w-md font-serif text-[17px] text-zinc-500">
         Upgrade when you want a voice that listens back.
       </p>
+      </Reveal>
 
-      <div className="mt-12 grid gap-3 rounded-[28px] bg-tray p-3 text-left md:grid-cols-2">
+      <Reveal delay={0.1} className="mt-12 grid gap-3 rounded-[28px] bg-tray p-3 text-left md:grid-cols-2">
         {PLANS.map((p) => (
           <div
             key={p.name}
-            className={`flex flex-col rounded-[22px] p-7 ${p.dark ? "bg-zinc-950 text-white" : "bg-white text-zinc-950"}`}
+            className={`flex flex-col rounded-[22px] p-7 ${p.dark ? "bg-[linear-gradient(160deg,#121830_0%,#262a4d_55%,#4a3550_100%)] text-white" : "bg-white text-zinc-950"}`}
           >
             <p className={`text-[14px] ${p.dark ? "text-amber-200" : "text-zinc-500"}`}>{p.name}</p>
             <p className="mt-2 font-display text-5xl tracking-tight">
@@ -70,7 +73,7 @@ export function PricingSection() {
             </Link>
           </div>
         ))}
-      </div>
+      </Reveal>
     </section>
   );
 }
