@@ -18,5 +18,6 @@ router.post("/logout", AuthController.logout);
 // Protected Authentication Routes
 router.post("/onboard", authenticate as any, AuthController.onboard as any);
 router.get("/me", authenticate as any, AuthController.getMe as any);
+router.post("/password", authenticate as any, AuthController.setPassword as any);
 
 export default router;

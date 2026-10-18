@@ -1,6 +1,17 @@
 import prisma from "../config/db";
 import { EmailService } from "./email.service";
 
+/** Max codes one identifier may request inside the window */
+export const OTP_LIMIT = 5;
+export const OTP_WINDOW_MINUTES = 10;
+
+export class OtpRateLimitError extends Error {
+  constructor(public retryAfterMinutes: number) {
+    super(`Too many codes requested. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? "" : "s"}.`);
+    this.name = "OtpRateLimitError";
+  }
+}
+
 export class OtpService {
   /**
    * Generates a 6-digit numeric OTP code.
@@ -13,6 +24,8 @@ export class OtpService {
    * Creates an OTP in the database with a 5-minute expiry.
    */
   public static async createOtp(identifier: string, type: "PHONE" | "EMAIL"): Promise<string> {
+    await this.assertUnderLimit(identifier, type);
+
     const code = this.generateCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
@@ -41,6 +54,25 @@ export class OtpService {
     }
 
     return code;
+  }
+
+  /**
+   * Throws OtpRateLimitError when the identifier already requested OTP_LIMIT codes
+   * inside the last OTP_WINDOW_MINUTES (covers resend spam on signup and login).
+   */
+  private static async assertUnderLimit(identifier: string, type: "PHONE" | "EMAIL"): Promise<void> {
+    const windowStart = new Date(Date.now() - OTP_WINDOW_MINUTES * 60 * 1000);
+    const recent = await prisma.otpVerification.findMany({
+      where: { identifier, type, createdAt: { gte: windowStart } },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+    });
+
+    if (recent.length >= OTP_LIMIT) {
+      const oldest = recent[0].createdAt.getTime();
+      const retryAfterMs = oldest + OTP_WINDOW_MINUTES * 60 * 1000 - Date.now();
+      throw new OtpRateLimitError(Math.max(1, Math.ceil(retryAfterMs / 60000)));
+    }
   }
 
   /**

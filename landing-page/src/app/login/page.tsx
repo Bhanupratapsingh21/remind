@@ -11,7 +11,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 
-type LoginStep = "identifier" | "password" | "code";
+type LoginStep = "identifier" | "password" | "code" | "newPassword";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +30,11 @@ export default function LoginPage() {
   const [maskedEmail, setMaskedEmail] = useState("");
   const [debugOtp, setDebugOtp] = useState<string | null>(null);
   const [resendTimer, setResendTimer] = useState(0);
+
+  // After a code login the session exists; we hold the user until the new password is set or skipped
+  const [pendingUser, setPendingUser] = useState<any>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // If already authenticated:
   useEffect(() => {
@@ -124,7 +129,10 @@ export default function LoginPage() {
         identifier: identifier.trim(),
         code: code.trim(),
       });
-      finishLogin(res.data.data.user);
+      // Signed in; offer a new password before entering the app
+      setPendingUser(res.data.data.user);
+      setNewPassword("");
+      setStep("newPassword");
     } catch (err: any) {
       const msg = err.response?.data?.message || "Invalid or expired code.";
       dispatch(loginFailure(msg));
@@ -134,13 +142,32 @@ export default function LoginPage() {
     }
   };
 
+  const handleSaveNewPassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Use at least 6 characters.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.post("/auth/password", { password: newPassword });
+      toast.success("Password updated.");
+      finishLogin(pendingUser);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Could not update the password.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSkipNewPassword = () => finishLogin(pendingUser);
+
   const backLabel = step === "code" ? "use password" : "change username";
 
   return (
     <AuthShell
       tagline="Welcome back."
       topRight={
-        step !== "identifier" && (
+        step !== "identifier" && step !== "newPassword" && (
           <button
             type="button"
             onClick={() => setStep(step === "code" ? "password" : "identifier")}
@@ -161,7 +188,7 @@ export default function LoginPage() {
       }
     >
       <h1 className="mb-10 font-display text-4xl tracking-[-0.03em] text-zinc-950">
-        {step === "code" ? "Check your email" : "Sign in to remind"}
+        {step === "code" ? "Check your email" : step === "newPassword" ? "Set a new password" : "Sign in to remind"}
       </h1>
 
       {step === "identifier" && (
@@ -283,6 +310,55 @@ export default function LoginPage() {
                   Development OTP: <strong className="text-black">{debugOtp}</strong>
                 </div>
               )}
+            </div>
+          }
+        />
+      )}
+
+      {step === "newPassword" && (
+        <SmoothInput
+          variant="underline"
+          label="NEW PASSWORD"
+          type={showNewPassword ? "text" : "password"}
+          placeholder="at least 6 characters"
+          value={newPassword}
+          autoFocus
+          onChange={(e) => setNewPassword(e.target.value)}
+          onEnter={handleSaveNewPassword}
+          rightElement={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="text-neutral-400 hover:text-black transition-colors cursor-pointer p-0.5"
+                title={showNewPassword ? "Hide password" : "Show password"}
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+              {submitting ? (
+                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+              ) : newPassword.length >= 6 ? (
+                <button
+                  type="button"
+                  onClick={handleSaveNewPassword}
+                  className="text-xs font-mono text-neutral-400 hover:text-black transition-colors cursor-pointer"
+                >
+                  [ enter ↵ ]
+                </button>
+              ) : undefined}
+            </div>
+          }
+          statusMessage={
+            <div className="pt-2 flex items-center justify-between text-xs text-neutral-400 font-mono">
+              <span>You&apos;re signed in. Choose a password you&apos;ll remember.</span>
+              <button
+                type="button"
+                onClick={handleSkipNewPassword}
+                disabled={submitting}
+                className="text-neutral-900 hover:underline cursor-pointer disabled:opacity-60"
+              >
+                skip for now
+              </button>
             </div>
           }
         />

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "../config/db";
-import { OtpService } from "../services/otp.service";
+import { OtpService, OtpRateLimitError } from "../services/otp.service";
 import { TokenService } from "../services/token.service";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import { toE164 } from "../utils/phone.utils";
@@ -46,6 +46,10 @@ const loginOtpVerifySchema = z.object({
   code: z.string().length(6, "Code must be exactly 6 digits"),
 });
 
+const setPasswordSchema = z.object({
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
 const loginSchema = z.object({
   identifier: z.string().min(3, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
@@ -80,6 +84,10 @@ export class AuthController {
         ...(process.env.NODE_ENV !== "production" ? { debugOtp: code } : {}),
       });
     } catch (error) {
+      if (error instanceof OtpRateLimitError) {
+        res.status(429).json({ success: false, message: error.message, retryAfterMinutes: error.retryAfterMinutes });
+        return;
+      }
       console.error("Error sending OTP:", error);
       res.status(500).json({ success: false, message: "Failed to send verification code" });
     }
@@ -468,6 +476,10 @@ export class AuthController {
         ...(process.env.NODE_ENV !== "production" ? { debugOtp: code } : {}),
       });
     } catch (error) {
+      if (error instanceof OtpRateLimitError) {
+        res.status(429).json({ success: false, message: error.message, retryAfterMinutes: error.retryAfterMinutes });
+        return;
+      }
       console.error("Error sending login OTP:", error);
       res.status(500).json({ success: false, message: "Failed to send login code" });
     }
@@ -506,6 +518,35 @@ export class AuthController {
     } catch (error: any) {
       console.error("Error during OTP login:", error);
       res.status(500).json({ success: false, message: error?.message || "Login failed" });
+    }
+  }
+
+  /**
+   * Set a new password for the signed-in user (used right after a code login)
+   * POST /api/auth/password
+   */
+  public static async setPassword(req: AuthenticatedRequest, res: Response): Promise<void> {
+    if (!req.user) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const parsed = setPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, errors: parsed.error.flatten() });
+      return;
+    }
+
+    try {
+      const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { password: hashedPassword },
+      });
+      res.status(200).json({ success: true, message: "Password updated" });
+    } catch (error: any) {
+      console.error("Error setting password:", error);
+      res.status(500).json({ success: false, message: error?.message || "Could not update password" });
     }
   }
 
