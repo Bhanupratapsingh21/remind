@@ -167,9 +167,8 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
             <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full">
               <defs>
                 <filter id={`glow-${id}`} x="-60%" y="-60%" width="220%" height="220%">
-                  <feGaussianBlur stdDeviation="2.4" result="b" />
+                  <feGaussianBlur stdDeviation="1.6" result="b" />
                   <feMerge>
-                    <feMergeNode in="b" />
                     <feMergeNode in="b" />
                     <feMergeNode in="SourceGraphic" />
                   </feMerge>
@@ -184,32 +183,33 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                 </linearGradient>
               </defs>
 
-              {/* glossy highlight along the top-left of the visor */}
-              <path
-                d="M14 46 A38 38 0 0 1 50 11"
-                fill="none"
-                stroke={`url(#gloss-${id})`}
-                strokeWidth="5"
-                strokeLinecap="round"
+              {/* soft specular highlight, top-left of the visor */}
+              <ellipse
+                cx="30"
+                cy="24"
+                rx="13"
+                ry="5"
+                fill={`url(#gloss-${id})`}
+                transform="rotate(-38 30 24)"
+                style={{ filter: "blur(1.5px)" }}
               />
-              <ellipse cx="30" cy="22" rx="7" ry="3" fill="#fff" opacity=".18" transform="rotate(-35 30 22)" />
 
-              {/* eyes + cheek smiles, shifted toward the cursor */}
+              {/* eyes + small cheek smiles, shifted toward the cursor */}
               <g
                 filter={`url(#glow-${id})`}
                 style={{ transform: `translate(${look.x}px, ${look.y}px)`, transition: "transform .2s ease-out" }}
               >
                 {[
-                  { x: 31, y: 33, smile: "M24 57 Q28 60.5 32 57" },
-                  { x: 59, y: 38, smile: "M52 62 Q56 65.5 60 62" },
+                  { x: 31, y: 34, smile: "M27 59 Q30.5 62 34 59.5" },
+                  { x: 58, y: 39, smile: "M54 64 Q57.5 67 61 64.5" },
                 ].map((e, i) => (
                   <g key={i}>
                     <rect
                       x={e.x}
                       y={e.y}
-                      width="11"
-                      height="21"
-                      rx="5.5"
+                      width="12"
+                      height="20"
+                      rx="6"
                       fill={`url(#eye-${id})`}
                       style={{
                         transformBox: "fill-box",
@@ -218,7 +218,7 @@ export function AgentMascot({ size = 150, className = "" }: AgentMascotProps) {
                         transition: "transform .09s",
                       }}
                     />
-                    <path d={e.smile} fill="none" stroke="#ffd59a" strokeWidth="2.6" strokeLinecap="round" />
+                    <path d={e.smile} fill="none" stroke="#ffdca6" strokeWidth="2.2" strokeLinecap="round" />
                   </g>
                 ))}
               </g>

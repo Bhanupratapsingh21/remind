@@ -20,7 +20,7 @@ export function QuietHoursSection() {
         <div>
           <Eyebrow>Call preferences & control</Eyebrow>
           <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
-            Total peace when you sleep.
+            Peace when you sleep.
             <br />
             Focus when you work.
           </h2>
@@ -30,11 +30,11 @@ export function QuietHoursSection() {
           </p>
         </div>
 
-        <div className="rounded-[28px] bg-[linear-gradient(160deg,#1d2140_0%,#2b2f55_55%,#4a3f5c_100%)] p-3">
+        <div className="rounded-[28px] bg-[linear-gradient(160deg,#9cc0e6_0%,#d9e4f0_50%,#f3dcc6_100%)] p-3">
           <div className="rounded-[22px] bg-white p-6 sm:p-7">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-indigo-50 text-indigo-500">
+                <span className="grid h-10 w-10 place-items-center rounded-2xl bg-amber-50 text-amber-600">
                   <Moon className="h-5 w-5" />
                 </span>
                 <div>

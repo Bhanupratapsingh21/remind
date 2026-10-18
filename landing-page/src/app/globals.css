@@ -137,3 +137,8 @@
     font-family: "Helvetica Neue", Arial, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 }
+/* Hero headline entrance; CSS so it always completes even when JS is throttled */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); filter: blur(8px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}

@@ -11,7 +11,6 @@ import {
   Moon,
   PhoneCall,
   PhoneIncoming,
-  Smartphone,
   Sparkles,
 } from "lucide-react";
 import { CloudShader } from "@/components/ui/cloud-shader";
@@ -49,14 +48,13 @@ function AnimatedHeadline() {
   return (
     <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-display text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
       {words.map((w, i) => (
-        <motion.span
+        <span
           key={w}
-          initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 0.7, delay: 0.15 + i * 0.22, ease: [0.22, 1, 0.36, 1] }}
+          className="animate-[rise_.7s_cubic-bezier(.22,1,.36,1)_both]"
+          style={{ animationDelay: `${0.15 + i * 0.22}s` }}
         >
           {w}
-        </motion.span>
+        </span>
       ))}
     </h1>
   );
@@ -157,16 +155,15 @@ export function HomeHero() {
           </div>
 
           <div className="relative px-4 pt-12 text-center">
-            <motion.a
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex cursor-pointer items-center gap-2.5 rounded-full bg-zinc-950 py-1.5 pl-1.5 pr-3.5 text-[13px] text-white shadow-[0_8px_24px_-8px_rgba(0,0,0,.45)]"
+            <Link
+              href="#how-it-works"
+              className="inline-flex items-center gap-2.5 rounded-full bg-zinc-950 py-1.5 pl-1.5 pr-3.5 text-[13px] text-white shadow-[0_8px_24px_-8px_rgba(0,0,0,.45)] hover:bg-zinc-800"
             >
               <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-900">NEW</span>
               <span className="font-medium">Snooze by voice is here</span>
-              <span className="hidden text-zinc-400 sm:inline">See what&apos;s new</span>
+              <span className="hidden text-zinc-400 sm:inline">See how it works</span>
               <ArrowRight className="h-3.5 w-3.5 text-zinc-300" />
-            </motion.a>
+            </Link>
 
             {/* the agent */}
             <div className="mt-6 flex justify-center">
@@ -203,7 +200,7 @@ export function HomeHero() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.25 }}
-                  className="font-serif text-[18px] leading-[1.6] text-zinc-700 sm:text-[20px]"
+                  className="font-serif text-[18px] leading-[1.6] text-zinc-800 sm:text-[20px]"
                 >
                   {MODES[mode].text}
                 </motion.p>
@@ -237,11 +234,7 @@ export function HomeHero() {
               </Link>
               <ArrowRight className="h-3.5 w-3.5" />
             </p>
-            <p className="mt-3 flex items-center justify-center gap-3 text-[14px] text-zinc-600">
-              Works on any phone
-              <Smartphone className="h-4 w-4" />
-              <PhoneCall className="h-4 w-4" />
-            </p>
+            <p className="mt-3 text-[14px] text-zinc-600">Works on any phone. No app needed.</p>
 
             <DeviceMock />
           </div>
