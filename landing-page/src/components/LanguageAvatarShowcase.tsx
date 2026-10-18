@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Volume2 } from "lucide-react";
+import { Eyebrow } from "@/components/site/Eyebrow";
 
 interface VoiceStyleOption {
   name: string;
@@ -84,100 +85,86 @@ export function LanguageAvatarShowcase() {
   };
 
   return (
-    <section className="w-full bg-[#f5f4ef] py-24 sm:py-32 px-6 border-t border-b border-[#e9e8e0]">
-      <div className="mx-auto max-w-4xl text-center">
-        {/* Eyebrow */}
-        <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-neutral-500 font-medium">
-          PERSONA & VOICE CUSTOMIZATION
-        </p>
-
-        {/* Headline */}
-        <h2 className="mt-4 text-4xl sm:text-5xl md:text-6xl font-normal text-[#151515] tracking-tight leading-[1.1]">
-          A voice you trust.
-          <br />
-          A tone that fits your day.
-        </h2>
-
-        {/* Persona Selector Chips */}
-        <div className="mt-14 sm:mt-18 flex flex-wrap justify-center items-center gap-2.5 sm:gap-3 max-w-2xl mx-auto">
-          {PERSONAS.map((persona) => {
-            const isSelected = selectedPersona === persona.id;
-            return (
-              <button
-                key={persona.id}
-                type="button"
-                onClick={() => {
-                  setSelectedPersona(persona.id);
-                  handleSpeak(selectedStyle.phrase, selectedStyle.code);
-                }}
-                className={`px-4 py-2 rounded-full text-xs transition-all cursor-pointer select-none flex items-center gap-1.5 ${
-                  isSelected
-                    ? "bg-[#151515] text-white shadow-sm font-medium"
-                    : "border border-neutral-300/80 bg-white/80 text-neutral-600 hover:text-[#151515] hover:border-neutral-400 font-normal"
-                }`}
-              >
-                <span>{persona.name}</span>
-                <span className={`text-[10px] ${isSelected ? "text-neutral-300" : "text-neutral-400"}`}>
-                  · {persona.role}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Spoken phrase preview with sound icon */}
-        <div className="mt-10 min-h-[4.5rem] flex flex-col items-center justify-center max-w-2xl mx-auto px-4">
-          <div
-            onClick={() => handleSpeak(selectedStyle.phrase, selectedStyle.code)}
-            className="group flex items-center justify-center gap-3 cursor-pointer"
-          >
-            <p className="text-xl sm:text-2xl font-normal text-[#151515] tracking-tight group-hover:text-neutral-600 transition-colors leading-relaxed">
-              {selectedStyle.phrase}
-            </p>
-            <Volume2
-              className={`h-4 w-4 shrink-0 transition-transform ${
-                isSpeaking ? "text-amber-600 animate-pulse scale-110" : "text-neutral-400 group-hover:text-black"
-              }`}
-            />
+    <section id="voices" className="w-full scroll-mt-20 px-3 sm:px-4">
+      <div className="mx-auto max-w-[1888px] rounded-[28px] bg-[linear-gradient(180deg,#f7efe4_0%,#f3e7d8_100%)] px-4 py-20 text-center sm:py-28">
+        <div className="mx-auto max-w-4xl">
+          <div className="flex justify-center">
+            <Eyebrow>Persona & voice</Eyebrow>
           </div>
-          <p className="text-xs text-neutral-500 mt-2 font-mono">
-            {selectedStyle.description}
+          <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl md:text-6xl">
+            A voice you trust.
+            <br />
+            A tone that fits your day.
+          </h2>
+
+          {/* Persona chips */}
+          <div className="mx-auto mt-12 flex max-w-2xl flex-wrap items-center justify-center gap-2">
+            {PERSONAS.map((persona) => {
+              const isSelected = selectedPersona === persona.id;
+              return (
+                <button
+                  key={persona.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPersona(persona.id);
+                    handleSpeak(selectedStyle.phrase, selectedStyle.code);
+                  }}
+                  className={`flex cursor-pointer select-none items-center gap-1.5 rounded-full px-4 py-2 text-[13px] transition-all ${
+                    isSelected
+                      ? "bg-zinc-950 font-medium text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,.5)]"
+                      : "bg-white/70 text-zinc-600 hover:bg-white hover:text-zinc-950"
+                  }`}
+                >
+                  <span>{persona.name}</span>
+                  <span className={`text-[11px] ${isSelected ? "text-amber-200" : "text-zinc-400"}`}>· {persona.role}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Spoken phrase card */}
+          <button
+            type="button"
+            onClick={() => handleSpeak(selectedStyle.phrase, selectedStyle.code)}
+            className="group mx-auto mt-8 flex w-full max-w-2xl items-center gap-4 rounded-[24px] bg-white p-5 text-left shadow-[0_20px_50px_-30px_rgba(120,70,20,.45)] sm:p-6"
+          >
+            <span
+              className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl transition-colors ${
+                isSpeaking ? "bg-amber-400 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100"
+              }`}
+            >
+              <Volume2 className={`h-5 w-5 ${isSpeaking ? "animate-pulse" : ""}`} />
+            </span>
+            <span>
+              <span className="block font-serif text-lg leading-snug text-zinc-900 sm:text-xl">{selectedStyle.phrase}</span>
+              <span className="mt-1 block font-mono text-[11px] text-zinc-400">{selectedStyle.description}</span>
+            </span>
+          </button>
+
+          {/* Style tabs */}
+          <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap justify-center gap-1 rounded-2xl bg-white/60 p-1">
+            {VOICE_STYLES.map((style) => {
+              const isActive = selectedStyle.name === style.name;
+              return (
+                <button
+                  key={style.name}
+                  type="button"
+                  onClick={() => handleStyleChange(style)}
+                  className={`cursor-pointer rounded-xl px-3.5 py-2 text-[13px] transition-all ${
+                    isActive ? "bg-white font-medium text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+                  }`}
+                >
+                  {style.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="mt-10 text-[14px] text-zinc-600">
+            Multiple languages · 5 voice personas · Ultra-low latency responses
           </p>
+          <p className="mt-1 text-[12px] text-zinc-400">All voice personalities are included with your account.</p>
         </div>
-
-        {/* Style Selection Tabs */}
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-5 sm:gap-8 border-b border-neutral-300/60 pb-3 max-w-xl mx-auto">
-          {VOICE_STYLES.map((style) => {
-            const isActive = selectedStyle.name === style.name;
-            return (
-              <button
-                key={style.name}
-                type="button"
-                onClick={() => handleStyleChange(style)}
-                className={`text-xs sm:text-sm transition-all pb-2 cursor-pointer relative ${
-                  isActive
-                    ? "font-medium text-[#151515]"
-                    : "font-normal text-neutral-500 hover:text-neutral-800"
-                }`}
-              >
-                {style.name}
-                {isActive && (
-                  <span className="absolute bottom-[-13px] left-0 right-0 h-[1.5px] bg-[#151515]" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Stats metadata */}
-        <p className="mt-10 text-xs sm:text-sm text-neutral-600 font-normal">
-          Multiple global languages · 5 distinct voice personas · Ultra-low latency voice responses
-        </p>
-
-        {/* Fine print */}
-        <p className="mt-2 text-xs text-neutral-400">
-          All voice personalities are included with your account.
-        </p>
       </div>
     </section>
   );

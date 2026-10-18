@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Instrument_Sans, Source_Serif_4 } from "next/font/google";
 import {
   ArrowDown,
   ArrowRight,
@@ -24,8 +23,6 @@ import {
   Sparkles,
 } from "lucide-react";
 
-const display = Instrument_Sans({ subsets: ["latin"], variable: "--font-demo-display" });
-const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-demo-serif" });
 
 /* Small "● LABEL" eyebrow used above every section heading */
 function Eyebrow({ children }: { children: React.ReactNode }) {
@@ -186,7 +183,7 @@ const MODES = [
 function AnimatedHeadline() {
   const words = ["Remind.", "Ring.", "Done."];
   return (
-    <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-[family-name:var(--font-demo-display)] text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
+    <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-display text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
       {words.map((w, i) => (
         <motion.span
           key={w}
@@ -240,19 +237,6 @@ function Hero() {
                 </button>
               ))}
             </div>
-            <AnimatePresence>
-              {!clicked && (
-                <motion.span
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1, y: [0, -4, 0] }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ y: { repeat: Infinity, duration: 1.8 }, delay: 1.2 }}
-                  className="absolute -left-20 top-9 hidden items-center gap-1 rounded-xl bg-sky-500 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg shadow-sky-500/30 sm:flex"
-                >
-                  Click me 👆
-                </motion.span>
-              )}
-            </AnimatePresence>
           </div>
 
           <div className="mt-11">
@@ -267,7 +251,7 @@ function Hero() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.25 }}
-                className="font-[family-name:var(--font-demo-serif)] text-[18px] leading-[1.6] text-zinc-500 sm:text-[20px]"
+                className="font-serif text-[18px] leading-[1.6] text-zinc-500 sm:text-[20px]"
               >
                 {MODES[mode].text}
               </motion.p>
@@ -438,10 +422,10 @@ function ModesSection() {
       <div className="flex justify-center">
         <Eyebrow>Remind has 3 modes</Eyebrow>
       </div>
-      <h2 className="font-[family-name:var(--font-demo-display)] text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
+      <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
         One reminder, every way to reach you
       </h2>
-      <p className="mx-auto mt-4 max-w-lg font-[family-name:var(--font-demo-serif)] text-[17px] text-zinc-500">
+      <p className="mx-auto mt-4 max-w-lg font-serif text-[17px] text-zinc-500">
         Start with a simple ring. Upgrade when you want a voice that listens back.
       </p>
 
@@ -461,7 +445,7 @@ function ModesSection() {
               </span>
             </div>
             <h3 className="mt-5 text-lg font-medium text-zinc-950">{title}</h3>
-            <p className="mt-1.5 font-[family-name:var(--font-demo-serif)] text-[15px] leading-relaxed text-zinc-500">{desc}</p>
+            <p className="mt-1.5 font-serif text-[15px] leading-relaxed text-zinc-500">{desc}</p>
             <ol className="mt-5 space-y-2.5">
               {steps.map((s, i) => (
                 <li key={s} className="flex gap-3 text-[14px] text-zinc-700">
@@ -497,12 +481,12 @@ function FeatureSplit() {
     <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-24 md:grid-cols-2">
       <div>
         <Eyebrow>AI Call mode</Eyebrow>
-        <h2 className="font-[family-name:var(--font-demo-display)] text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
+        <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl">
           A reminder you can
           <br />
           talk back to
         </h2>
-        <p className="mt-5 max-w-md font-[family-name:var(--font-demo-serif)] text-[17px] leading-relaxed text-zinc-500">
+        <p className="mt-5 max-w-md font-serif text-[17px] leading-relaxed text-zinc-500">
           Answer, say what happened, and hang up. Remind marks it done, moves it to later, or drops it, all from one
           short call.
         </p>
@@ -569,14 +553,14 @@ function Pricing() {
       <div className="flex justify-center">
         <Eyebrow>Pricing</Eyebrow>
       </div>
-      <h2 className="font-[family-name:var(--font-demo-display)] text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
+      <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
         Start with a ring
       </h2>
       <div className="mt-12 grid gap-3 rounded-[28px] bg-zinc-200/50 p-3 text-left md:grid-cols-2">
         {plans.map((p) => (
           <div key={p.name} className={`flex flex-col rounded-[20px] p-7 ${p.dark ? "bg-zinc-950 text-white" : "bg-white"}`}>
             <p className={`text-[14px] ${p.dark ? "text-zinc-400" : "text-zinc-500"}`}>{p.name}</p>
-            <p className="mt-2 font-[family-name:var(--font-demo-display)] text-5xl tracking-tight">
+            <p className="mt-2 font-display text-5xl tracking-tight">
               {p.price}
               <span className={`ml-2 text-[14px] tracking-normal ${p.dark ? "text-zinc-400" : "text-zinc-500"}`}>{p.note}</span>
             </p>
@@ -609,7 +593,7 @@ function FinalCta() {
       <div className="relative mx-auto max-w-[1240px] overflow-hidden rounded-[28px] px-4 py-20 text-center">
         <SkyBackdrop dense={false} />
         <div className="relative">
-          <h2 className="font-[family-name:var(--font-demo-display)] text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
+          <h2 className="font-display text-4xl tracking-[-0.03em] text-zinc-950 sm:text-5xl">
             Stop ignoring notifications.
             <br />
             Pick up the call.
@@ -636,7 +620,7 @@ function FinalCta() {
 
 export default function DemoUiPage() {
   return (
-    <div className={`${display.variable} ${serif.variable} min-h-screen bg-[#fbfbfb] text-zinc-950 antialiased`}>
+    <div className={`min-h-screen bg-[#fbfbfb] text-zinc-950 antialiased`}>
       <ChatBubble />
       <Nav />
       <Hero />

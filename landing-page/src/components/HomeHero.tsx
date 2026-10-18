@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Instrument_Sans, Source_Serif_4 } from "next/font/google";
 import {
   ArrowDown,
   ArrowRight,
   BellRing,
-  ChevronDown,
   Clock,
   Moon,
   PhoneCall,
@@ -18,9 +16,8 @@ import {
 } from "lucide-react";
 import { CloudShader } from "@/components/ui/cloud-shader";
 import { AgentMascot } from "@/components/AgentMascot";
+import { SiteNav } from "@/components/site/SiteNav";
 
-const display = Instrument_Sans({ subsets: ["latin"], variable: "--font-hero-display" });
-const serif = Source_Serif_4({ subsets: ["latin"], variable: "--font-hero-serif" });
 
 /* Warm sky that matches the agent's amber glow */
 const SKY = {
@@ -47,53 +44,10 @@ const MODES = [
   },
 ];
 
-function Nav() {
-  const links = [
-    { label: "Product", menu: true },
-    { label: "How it works" },
-    { label: "Voices" },
-    { label: "Help", menu: true },
-    { label: "Pricing" },
-  ];
-  return (
-    <header className="sticky top-0 z-50 bg-white/85 backdrop-blur-md">
-      <nav className="mx-auto flex h-[68px] max-w-[1880px] items-center justify-between px-5 sm:px-8">
-        <div className="flex items-center gap-10">
-          <Link
-            href="/"
-            className="text-2xl font-bold tracking-tighter text-[#151515] transition-opacity hover:opacity-80"
-          >
-            remind
-          </Link>
-          <ul className="hidden items-center gap-6 text-[15px] font-medium text-zinc-800 lg:flex">
-            {links.map((l) => (
-              <li key={l.label} className="flex cursor-pointer items-center gap-1 hover:text-zinc-500">
-                {l.label}
-                {l.menu && <ChevronDown className="h-4 w-4 text-zinc-500" />}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/login"
-            className="rounded-xl border border-zinc-900 px-4 py-2 text-[15px] font-medium text-zinc-900 hover:bg-zinc-100"
-          >
-            Login
-          </Link>
-          <Link href="/signup" className="rounded-xl bg-zinc-950 px-4 py-2 text-[15px] font-medium text-white hover:bg-zinc-800">
-            Sign Up
-          </Link>
-        </div>
-      </nav>
-    </header>
-  );
-}
-
 function AnimatedHeadline() {
   const words = ["Remind.", "Ring.", "Done."];
   return (
-    <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-[family-name:var(--font-hero-display)] text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
+    <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-display text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
       {words.map((w, i) => (
         <motion.span
           key={w}
@@ -193,8 +147,8 @@ export function HomeHero() {
   const [mode, setMode] = useState(1);
 
   return (
-    <div className={`${display.variable} ${serif.variable}`}>
-      <Nav />
+    <div>
+      <SiteNav />
       <section className="px-3 sm:px-4">
         <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#7aaad9,#f1d9c3)]">
           {/* WebGL sky; the gradient above shows if WebGL is unavailable */}
@@ -249,7 +203,7 @@ export function HomeHero() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.25 }}
-                  className="font-[family-name:var(--font-hero-serif)] text-[18px] leading-[1.6] text-zinc-700 sm:text-[20px]"
+                  className="font-serif text-[18px] leading-[1.6] text-zinc-700 sm:text-[20px]"
                 >
                   {MODES[mode].text}
                 </motion.p>
