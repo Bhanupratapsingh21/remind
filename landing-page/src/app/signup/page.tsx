@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { registerSuccess } from "@/store/slices/authSlice";
 import { useDebounce } from "@/hooks/useDebounce";
 import { SmoothInput } from "@/components/ui/skiper-ui/skiper106";
+import { AuthShell } from "@/components/site/AuthShell";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, CheckCircle2, ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -228,18 +229,14 @@ export default function SignUpPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col justify-between py-8 px-6 sm:px-12 bg-white text-[#151515] font-sans antialiased selection:bg-neutral-200">
-      {/* Top Header */}
-      <header className="flex items-center justify-between max-w-4xl w-full mx-auto">
-        <Link
-          href="/"
-          className="text-xl font-bold tracking-tighter text-[#151515] hover:opacity-70 transition-opacity"
-        >
-          remind
-        </Link>
+  const steps = ["email", "otp", "name", "username", "password"];
+  const stepIndex = steps.indexOf(currentStep);
 
-        {currentStep !== "email" && (
+  return (
+    <AuthShell
+      tagline="Meet the reminder that calls you."
+      topRight={
+        currentStep !== "email" && (
           <button
             type="button"
             onClick={() => {
@@ -248,221 +245,203 @@ export default function SignUpPage() {
               else if (currentStep === "username") setCurrentStep("name");
               else if (currentStep === "password") setCurrentStep("username");
             }}
-            className="text-xs font-mono text-neutral-400 hover:text-black flex items-center gap-1 transition-colors cursor-pointer"
+            className="flex cursor-pointer items-center gap-1 rounded-xl px-2.5 py-1.5 font-mono text-xs text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-black"
           >
             <ArrowLeft className="h-3 w-3" />
             <span>back</span>
           </button>
-        )}
-      </header>
-
-      {/* Main Centered Minimalist Input Experience */}
-      <main className="w-full max-w-xl mx-auto my-auto py-12">
-        {/* ================= STEP 1: EMAIL ================= */}
-        {currentStep === "email" && (
-          <SmoothInput
-            variant="underline"
-            label="EMAIL ADDRESS"
-            placeholder="you@example.com"
-            value={email}
-            autoFocus
-            onChange={(e) => setEmail(e.target.value)}
-            onEnter={handleSendOtp}
-            rightElement={
-              isSendingOtp ? (
-                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-              ) : undefined
-            }
-            statusMessage={
-              <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
-                <span>Enter your email to receive a 6-digit verification code.</span>
-              </div>
-            }
-          />
-        )}
-
-        {/* ================= STEP 2: OTP (Screen 3 style) ================= */}
-        {currentStep === "otp" && (
-          <SmoothInput
-            variant="underline"
-            label="ONE TIME PASSWORD"
-            placeholder="• • • • • •"
-            value={otpCode}
-            autoFocus
-            maxLength={6}
-            onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
-            onEnter={handleVerifyOtp}
-            rightElement={
-              isVerifyingOtp ? (
-                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-              ) : undefined
-            }
-            statusMessage={
-              <div className="pt-2 space-y-2">
-                <div className="flex items-center justify-between text-xs text-neutral-400 font-mono">
-                  <span>Sent to {email}</span>
-                  {resendTimer > 0 ? (
-                    <span>resend in {resendTimer}s</span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSendOtp}
-                      className="text-neutral-900 hover:underline cursor-pointer"
-                    >
-                      resend code
-                    </button>
-                  )}
-                </div>
-
-                {debugOtp && (
-                  <div className="text-[11px] font-mono text-neutral-500 pt-1">
-                    Development OTP: <strong className="text-black">{debugOtp}</strong>
-                  </div>
-                )}
-              </div>
-            }
-          />
-        )}
-
-        {/* ================= STEP 3: FULL NAME ================= */}
-        {currentStep === "name" && (
-          <SmoothInput
-            variant="underline"
-            label="FULL NAME"
-            placeholder="Alex Morgan"
-            value={name}
-            autoFocus
-            onChange={(e) => setName(e.target.value)}
-            onEnter={handleNameNext}
-            statusMessage={
-              <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
-                <span className="flex items-center gap-1.5 text-emerald-600">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  {email} verified
-                </span>
-                <span>Press [ enter ↵ ]</span>
-              </div>
-            }
-          />
-        )}
-
-        {/* ================= STEP 4: USERNAME WITH DEBOUNCING ================= */}
-        {currentStep === "username" && (
-          <SmoothInput
-            variant="underline"
-            label="CHOOSE USERNAME"
-            placeholder="alexmorgan"
-            value={username}
-            autoFocus
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
-            onEnter={handleUsernameNext}
-            rightElement={
-              checkingUsername ? (
-                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-              ) : undefined
-            }
-            statusMessage={
-              <div className="flex items-center justify-between text-xs pt-2 font-mono">
-                {usernameStatus.checked ? (
-                  <span
-                    className={
-                      usernameStatus.available ? "text-emerald-600 font-medium" : "text-red-500"
-                    }
-                  >
-                    {usernameStatus.message}
-                  </span>
-                ) : (
-                  <span className="text-neutral-400">Unique handle for your account.</span>
-                )}
-                {usernameStatus.available && (
-                  <span className="text-neutral-400">Press [ enter ↵ ]</span>
-                )}
-              </div>
-            }
-          />
-        )}
-
-        {/* ================= STEP 5: PASSWORD ================= */}
-        {currentStep === "password" && (
-          <SmoothInput
-            variant="underline"
-            label="PASSWORD"
-            type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            value={password}
-            autoFocus
-            onChange={(e) => setPassword(e.target.value)}
-            onEnter={handleFinalRegister}
-            rightElement={
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="text-neutral-400 hover:text-black transition-colors cursor-pointer p-0.5"
-                  title={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-                {creatingAccount ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-                ) : password ? (
-                  <button
-                    type="button"
-                    onClick={handleFinalRegister}
-                    className="text-xs font-mono text-neutral-400 hover:text-black transition-colors cursor-pointer"
-                  >
-                    [ enter ↵ ]
-                  </button>
-                ) : (
-                  <span className="text-neutral-400 text-sm">→</span>
-                )}
-              </div>
-            }
-            statusMessage={
-              <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
-                <span>At least 6 characters • 3-day free plan included</span>
-                {password.length >= 6 && (
-                  <span className="text-neutral-900 font-medium">Press [ enter ↵ ]</span>
-                )}
-              </div>
-            }
-          />
-        )}
-      </main>
-
-      {/* Subtle Footer */}
-      <footer className="max-w-4xl w-full mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-neutral-400 font-mono">
-        <p>
+        )
+      }
+      footer={
+        <>
           Already have an account?{" "}
-          <Link
-            href="/login"
-            className="text-neutral-900 underline underline-offset-4 hover:text-black"
-          >
+          <Link href="/login" className="text-zinc-900 underline underline-offset-4 hover:text-black">
             Sign in
           </Link>
-        </p>
+        </>
+      }
+    >
+      <h1 className="font-display text-4xl tracking-[-0.03em] text-zinc-950">Create your account</h1>
+      {/* step progress */}
+      <div className="mb-10 mt-4 flex gap-1.5" aria-label={`Step ${stepIndex + 1} of ${steps.length}`}>
+        {steps.map((st, i) => (
+          <span
+            key={st}
+            className={`h-1.5 flex-1 rounded-full transition-colors ${i <= stepIndex ? "bg-zinc-950" : "bg-zinc-200"}`}
+          />
+        ))}
+      </div>
 
-        <p className="text-[11px] text-neutral-400">
-          Remind Created & Developed by{" "}
-          <a
-            href="https://bpss.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-neutral-600 underline underline-offset-2 hover:text-black transition-colors"
-          >
-            bpss.in
-          </a>{" "}
-          &{" "}
-          <a
-            href="https://www.rambhardwaj.in/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-neutral-600 underline underline-offset-2 hover:text-black transition-colors"
-          >
-            rambhardwaj.in
-          </a>
-        </p>
-      </footer>
-    </div>
+      {/* ================= STEP 1: EMAIL ================= */}
+      {currentStep === "email" && (
+        <SmoothInput
+          variant="underline"
+          label="EMAIL ADDRESS"
+          placeholder="you@example.com"
+          value={email}
+          autoFocus
+          onChange={(e) => setEmail(e.target.value)}
+          onEnter={handleSendOtp}
+          rightElement={
+            isSendingOtp ? (
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+            ) : undefined
+          }
+          statusMessage={
+            <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
+              <span>Enter your email to receive a 6-digit verification code.</span>
+            </div>
+          }
+        />
+      )}
+
+      {/* ================= STEP 2: OTP (Screen 3 style) ================= */}
+      {currentStep === "otp" && (
+        <SmoothInput
+          variant="underline"
+          label="ONE TIME PASSWORD"
+          placeholder="• • • • • •"
+          value={otpCode}
+          autoFocus
+          maxLength={6}
+          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+          onEnter={handleVerifyOtp}
+          rightElement={
+            isVerifyingOtp ? (
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+            ) : undefined
+          }
+          statusMessage={
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between text-xs text-neutral-400 font-mono">
+                <span>Sent to {email}</span>
+                {resendTimer > 0 ? (
+                  <span>resend in {resendTimer}s</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    className="text-neutral-900 hover:underline cursor-pointer"
+                  >
+                    resend code
+                  </button>
+                )}
+              </div>
+
+              {debugOtp && (
+                <div className="text-[11px] font-mono text-neutral-500 pt-1">
+                  Development OTP: <strong className="text-black">{debugOtp}</strong>
+                </div>
+              )}
+            </div>
+          }
+        />
+      )}
+
+      {/* ================= STEP 3: FULL NAME ================= */}
+      {currentStep === "name" && (
+        <SmoothInput
+          variant="underline"
+          label="FULL NAME"
+          placeholder="Alex Morgan"
+          value={name}
+          autoFocus
+          onChange={(e) => setName(e.target.value)}
+          onEnter={handleNameNext}
+          statusMessage={
+            <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
+              <span className="flex items-center gap-1.5 text-emerald-600">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {email} verified
+              </span>
+              <span>Press [ enter ↵ ]</span>
+            </div>
+          }
+        />
+      )}
+
+      {/* ================= STEP 4: USERNAME WITH DEBOUNCING ================= */}
+      {currentStep === "username" && (
+        <SmoothInput
+          variant="underline"
+          label="CHOOSE USERNAME"
+          placeholder="alexmorgan"
+          value={username}
+          autoFocus
+          onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s/g, ""))}
+          onEnter={handleUsernameNext}
+          rightElement={
+            checkingUsername ? (
+              <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+            ) : undefined
+          }
+          statusMessage={
+            <div className="flex items-center justify-between text-xs pt-2 font-mono">
+              {usernameStatus.checked ? (
+                <span
+                  className={
+                    usernameStatus.available ? "text-emerald-600 font-medium" : "text-red-500"
+                  }
+                >
+                  {usernameStatus.message}
+                </span>
+              ) : (
+                <span className="text-neutral-400">Unique handle for your account.</span>
+              )}
+              {usernameStatus.available && (
+                <span className="text-neutral-400">Press [ enter ↵ ]</span>
+              )}
+            </div>
+          }
+        />
+      )}
+
+      {/* ================= STEP 5: PASSWORD ================= */}
+      {currentStep === "password" && (
+        <SmoothInput
+          variant="underline"
+          label="PASSWORD"
+          type={showPassword ? "text" : "password"}
+          placeholder="••••••••"
+          value={password}
+          autoFocus
+          onChange={(e) => setPassword(e.target.value)}
+          onEnter={handleFinalRegister}
+          rightElement={
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-neutral-400 hover:text-black transition-colors cursor-pointer p-0.5"
+                title={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+              {creatingAccount ? (
+                <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
+              ) : password ? (
+                <button
+                  type="button"
+                  onClick={handleFinalRegister}
+                  className="text-xs font-mono text-neutral-400 hover:text-black transition-colors cursor-pointer"
+                >
+                  [ enter ↵ ]
+                </button>
+              ) : (
+                <span className="text-neutral-400 text-sm">→</span>
+              )}
+            </div>
+          }
+          statusMessage={
+            <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
+              <span>At least 6 characters • 3-day free plan included</span>
+              {password.length >= 6 && (
+                <span className="text-neutral-900 font-medium">Press [ enter ↵ ]</span>
+              )}
+            </div>
+          }
+        />
+      )}
+    </AuthShell>
   );
 }
