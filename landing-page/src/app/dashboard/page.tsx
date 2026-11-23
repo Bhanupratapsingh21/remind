@@ -8,7 +8,9 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { AgentMascot } from "@/components/AgentMascot";
 import { SiteNav } from "@/components/site/SiteNav";
+import { SettingsModal } from "@/components/SettingsModal";
 import {
+  Settings,
   PhoneCall,
   Plus,
   Clock,
@@ -79,6 +81,7 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedReminderForHistory, setSelectedReminderForHistory] = useState<ReminderItem | null>(null);
 
   // Create Reminder Form State
@@ -125,26 +128,6 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, user?.isOnboarded, fetchReminders]);
 
-  // Calculate remaining trial days/hours
-  const getTrialStatus = () => {
-    if (!user?.trialEndsAt) {
-      return { daysLeft: 3, isExpired: false, label: "3 days left" };
-    }
-    const end = new Date(user.trialEndsAt).getTime();
-    const now = Date.now();
-    const diffHours = Math.max(0, Math.round((end - now) / (1000 * 60 * 60)));
-    const diffDays = Math.ceil(diffHours / 24);
-
-    if (now >= end) {
-      return { daysLeft: 0, isExpired: true, label: "Trial expired" };
-    }
-    if (diffHours < 24) {
-      return { daysLeft: 1, isExpired: false, label: `${diffHours}h left` };
-    }
-    return { daysLeft: diffDays, isExpired: false, label: `${diffDays} days left` };
-  };
-
-  const trialInfo = getTrialStatus();
   const maxAllowedReminders = user?.maxReminders || 2;
   const activeReminders = reminders.filter((r) =>
     ["SCHEDULED", "CALLING", "SNOOZED"].includes(r.status)
@@ -163,7 +146,7 @@ export default function DashboardPage() {
   };
 
   const handleOpenCreateModal = () => {
-    if (isAtQuota || trialInfo.isExpired) {
+    if (isAtQuota) {
       setShowUpgradeModal(true);
       return;
     }
@@ -215,7 +198,7 @@ export default function DashboardPage() {
       toast.info(`Triggering immediate AI outbound call for "${reminder.title}"...`);
       const res = await api.post(`/reminders/${reminder.id}/retry`);
       if (res.data?.success) {
-        toast.success("Call dispatched! Check terminal / telephony provider.");
+        toast.success("Calling you now. Pick up your phone!");
         await fetchReminders();
       }
     } catch (err: any) {
@@ -313,6 +296,15 @@ export default function DashboardPage() {
             </div>
             <button
               type="button"
+              onClick={() => setShowSettingsModal(true)}
+              title="Settings"
+              className="flex items-center gap-1.5 rounded-xl border border-zinc-300 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-100 transition cursor-pointer"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+            <button
+              type="button"
               onClick={handleLogout}
               title="Sign out"
               className="flex items-center gap-1.5 rounded-xl border border-zinc-900 px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-100 transition cursor-pointer"
@@ -330,10 +322,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2.5 text-xs">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="font-semibold tracking-wide">
-              {user?.plan === "PRO" ? "Pro Subscription:" : "3-Day Free Trial:"}
+              {user?.plan === "PRO" ? "Pro Subscription:" : "Free plan:"}
             </span>
             <span className="text-neutral-300 font-mono">
-              {user?.plan === "PRO" ? "Unlimited Reminders" : `${trialInfo.label} • ${activeReminders.length}/${maxAllowedReminders} Active`}
+              {user?.plan === "PRO" ? "Unlimited Reminders" : `${activeReminders.length}/${maxAllowedReminders} active reminders`}
             </span>
           </div>
 
@@ -851,6 +843,8 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
+
       {/* UPGRADE MODAL */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
@@ -860,12 +854,12 @@ export default function DashboardPage() {
             </div>
 
             <h3 className="text-xl font-medium text-[#151515] tracking-tight">
-              3-Day Free Trial Limit Reached
+              Free Reminder Limit Reached
             </h3>
 
             <p className="mt-2 text-xs sm:text-sm text-neutral-500 leading-relaxed">
-              You have used your <strong>{maxAllowedReminders} free active reminders</strong>.
-              Upgrade to a Pro subscription for unlimited phone calling, custom voice personas, and smart retry schedules.
+              You have <strong>{maxAllowedReminders} active reminders</strong>, the free limit.
+              Complete or cancel one to add another. Pro with unlimited reminders is coming soon.
             </p>
 
             <div className="mt-6 p-4 bg-amber-50/60 rounded-[20px] text-left space-y-2 text-xs">
@@ -888,7 +882,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={() => {
                   setShowUpgradeModal(false);
-                  toast.info("Subscription checkout integration will open here!");
+                  toast.info("Pro upgrades are not open yet.");
                 }}
                 className="w-full rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer"
               >

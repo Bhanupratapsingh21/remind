@@ -43,5 +43,42 @@ export const ENV = {
   // App & Webhooks
   WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL || "http://localhost:5000",
   APP_TIMEZONE: process.env.APP_TIMEZONE || "Asia/Kolkata",
+
+  // Abuse / cost guard: outbound calls placed per user per rolling 24 hours
+  MAX_CALLS_PER_USER_PER_DAY: process.env.MAX_CALLS_PER_USER_PER_DAY
+    ? parseInt(process.env.MAX_CALLS_PER_USER_PER_DAY, 10)
+    : 20,
+};
+
+/**
+ * Production config problems that would make the app silently not work.
+ * Returns human-readable messages; empty when the config is usable.
+ */
+export const getProductionConfigErrors = (): string[] => {
+  const errors: string[] = [];
+  const webhookBase = ENV.WEBHOOK_BASE_URL.toLowerCase();
+
+  if (!process.env.DATABASE_URL) errors.push("DATABASE_URL is not set.");
+  if (!process.env.JWT_SECRET) errors.push("JWT_SECRET is not set (the built-in default is public).");
+  if (!ENV.REDIS_URL && !process.env.REDIS_HOST) {
+    errors.push("REDIS_URL is not set. The reminder scheduler needs Redis.");
+  }
+  if (ENV.VAPI_MOCK_CALLS) {
+    errors.push("Calls are in mock mode (VAPI_API_KEY empty or VAPI_MOCK_CALLS=true); no real call would be placed.");
+  } else {
+    if (!ENV.VAPI_PHONE_NUMBER_ID) errors.push("VAPI_PHONE_NUMBER_ID is not set.");
+    if (!ENV.VAPI_WEBHOOK_SECRET) errors.push("VAPI_WEBHOOK_SECRET is not set; every Vapi webhook would be rejected.");
+    if (
+      !webhookBase.startsWith("https://") ||
+      webhookBase.includes("localhost") ||
+      webhookBase.includes("your-public")
+    ) {
+      errors.push(`WEBHOOK_BASE_URL must be the backend's public https origin (now "${ENV.WEBHOOK_BASE_URL}").`);
+    }
+  }
+  if (ENV.CLIENT_URL.includes("localhost")) {
+    errors.push(`CLIENT_URL must be the frontend's public origin (now "${ENV.CLIENT_URL}").`);
+  }
+  return errors;
 };
 

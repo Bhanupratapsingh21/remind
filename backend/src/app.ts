@@ -9,6 +9,7 @@ import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import { ENV } from "./config/env";
 import { redisClient } from "./config/redis";
+import { VapiService } from "./modules/vapi/vapi.service";
 
 export const createApp = () => {
   const app = express();
@@ -40,13 +41,17 @@ export const createApp = () => {
       // stays "disconnected"
     }
 
+    const vapi = VapiService.setupStatus;
+    const healthy = redis === "connected" && vapi.state !== "error";
+
     res.status(redis === "connected" ? 200 : 503).json({
-      status: redis === "connected" ? "ok" : "degraded",
+      status: healthy ? "ok" : "degraded",
       service: "remind-backend-api",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       redis,
       vapiMock: ENV.VAPI_MOCK_CALLS,
+      vapi,
     });
   });
 
