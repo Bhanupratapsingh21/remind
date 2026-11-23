@@ -287,29 +287,67 @@ INSTRUCTIONS:
     return response.data;
   }
 
+  /** Outcome of the startup check, reported on /health */
+  public static setupStatus: {
+    state: "mock" | "pending" | "ok" | "error";
+    problems: string[];
+    phoneProvider?: string;
+  } = { state: "pending", problems: [] };
+
   /**
-   * Startup sanity check: confirm VAPI_PHONE_NUMBER_ID exists and log which provider carries the calls
-   * (provider "byo-phone-number" means an imported SIP trunk number such as Vobiz).
+   * Startup sanity check: the API key works, VAPI_PHONE_NUMBER_ID exists (provider "byo-phone-number"
+   * means an imported SIP trunk number such as Vobiz), and a dashboard assistant, when used, has our tools.
    */
-  public static async verifyPhoneNumber(): Promise<void> {
+  public static async verifySetup(): Promise<void> {
     if (this.isMock) {
-      console.log("📞 [VapiService] Mock call mode is on; skipping phone number check.");
+      this.setupStatus = { state: "mock", problems: [] };
+      console.log("📞 [VapiService] Mock call mode is on; skipping Vapi checks.");
       return;
     }
+
+    const problems: string[] = [];
+    let phoneProvider: string | undefined;
+    const describe = (error: any) => {
+      if (error.response?.status === 401) return "Vapi rejected VAPI_API_KEY (401). Use the private key.";
+      return JSON.stringify(error.response?.data || error.message);
+    };
+
     if (!ENV.VAPI_PHONE_NUMBER_ID) {
-      console.error("❌ [VapiService] VAPI_PHONE_NUMBER_ID is not set; outbound calls will fail.");
-      return;
+      problems.push("VAPI_PHONE_NUMBER_ID is not set; outbound calls will fail.");
+    } else {
+      try {
+        const { data } = await vapiHttp().get(`/phone-number/${ENV.VAPI_PHONE_NUMBER_ID}`);
+        phoneProvider = data.provider;
+        console.log(
+          `📞 [VapiService] Calling from ${data.number || data.sipUri || data.id} (provider: ${data.provider})`
+        );
+      } catch (error: any) {
+        problems.push(`Could not load VAPI_PHONE_NUMBER_ID: ${describe(error)}`);
+      }
     }
-    try {
-      const { data } = await vapiHttp().get(`/phone-number/${ENV.VAPI_PHONE_NUMBER_ID}`);
-      console.log(
-        `📞 [VapiService] Calling from ${data.number || data.sipUri || data.id} (provider: ${data.provider})`
-      );
-    } catch (error: any) {
-      console.error(
-        "❌ [VapiService] Could not load VAPI_PHONE_NUMBER_ID from Vapi:",
-        error.response?.data || error.message
-      );
+
+    if (ENV.VAPI_ASSISTANT_ID && !problems.some((p) => p.includes("401"))) {
+      try {
+        const { data } = await vapiHttp().get(`/assistant/${ENV.VAPI_ASSISTANT_ID}`);
+        const inlineTools: string[] = (data.model?.tools || []).map((t: any) => t.function?.name).filter(Boolean);
+        const expected = this.getToolDefinitions().map((t) => t.function.name);
+        const missing = expected.filter((name) => !inlineTools.includes(name));
+        if (missing.length && !(data.model?.toolIds || []).length) {
+          problems.push(
+            `Dashboard assistant ${ENV.VAPI_ASSISTANT_ID} lacks tools: ${missing.join(", ")}. ` +
+              "Clear VAPI_ASSISTANT_ID to use the in-code assistant."
+          );
+        } else if (missing.length) {
+          console.warn(
+            `⚠️ [VapiService] Dashboard assistant uses shared tools (toolIds); make sure they cover: ${missing.join(", ")}`
+          );
+        }
+      } catch (error: any) {
+        problems.push(`Could not load VAPI_ASSISTANT_ID: ${describe(error)}`);
+      }
     }
+
+    this.setupStatus = { state: problems.length ? "error" : "ok", problems, phoneProvider };
+    problems.forEach((p) => console.error(`❌ [VapiService] ${p}`));
   }
 }

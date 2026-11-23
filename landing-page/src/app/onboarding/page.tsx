@@ -71,7 +71,7 @@ export default function OnboardingPage() {
 
   // Form states
   const [referralSource, setReferralSource] = useState("");
-  const [countryCode, setCountryCode] = useState("+1");
+  const [countryCode, setCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [preferredVoice, setPreferredVoice] = useState("Elena");
   const [timezone, setTimezone] = useState("UTC");
@@ -110,7 +110,7 @@ export default function OnboardingPage() {
       dispatch(updateUser(updated));
       dispatch(setOnboarded(true));
 
-      toast.success("Welcome aboard! Your 3-day trial is ready.");
+      toast.success("Welcome aboard! Your agent is ready.");
       router.push("/dashboard");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to save onboarding preferences.");
@@ -307,15 +307,15 @@ export default function OnboardingPage() {
             <span className="font-mono text-neutral-900 font-medium">{timezone}</span>
           </div>
 
-          {/* 3-Day Free Plan confirmation */}
+          {/* Free plan confirmation */}
           <div className="p-4 bg-zinc-950 text-white rounded-2xl text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-medium">
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              <span>Your 3-Day Free Trial</span>
+              <span>Your free plan</span>
             </div>
             <p className="text-neutral-300 text-[11px]">
-              Includes 2 AI voice call reminders. After 2 reminders, you can easily upgrade to
-              Pro.
+              Up to 2 active AI voice call reminders at a time. Complete or cancel one to add
+              another.
             </p>
           </div>
 

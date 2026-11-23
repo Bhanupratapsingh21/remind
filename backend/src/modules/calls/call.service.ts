@@ -1,6 +1,7 @@
 import prisma from "../../config/db";
 import { VapiService } from "../vapi/vapi.service";
 import { SchedulerService } from "../../queues/reminder.queue";
+import { ENV } from "../../config/env";
 
 /** Attempt outcomes that trigger the retry policy */
 const RETRYABLE_STATUSES = ["NO_ANSWER", "BUSY", "FAILED", "VOICEMAIL"];
@@ -77,6 +78,22 @@ export class CallService {
         where: { id: reminderId },
         data: { status: "FAILED" },
       });
+      return null;
+    }
+
+    // Cost / abuse guard: phone numbers are not verified, so cap calls per user per rolling day
+    const callsToday = await prisma.reminderAttempt.count({
+      where: {
+        reminder: { userId: reminder.userId },
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        vapiCallId: { not: null },
+      },
+    });
+    if (callsToday >= ENV.MAX_CALLS_PER_USER_PER_DAY) {
+      console.warn(
+        `🚧 [CallService] User ${reminder.userId} hit the daily cap of ${ENV.MAX_CALLS_PER_USER_PER_DAY} calls. Reminder ${reminderId} marked FAILED.`
+      );
+      await prisma.reminder.update({ where: { id: reminderId }, data: { status: "FAILED" } });
       return null;
     }
 

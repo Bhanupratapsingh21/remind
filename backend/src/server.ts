@@ -1,10 +1,22 @@
 import createApp from "./app";
-import { ENV } from "./config/env";
+import { ENV, getProductionConfigErrors } from "./config/env";
 import prisma from "./config/db";
 import { redisClient } from "./config/redis";
 import { startReminderWorker, stopReminderWorker } from "./workers/reminder.worker";
 import { SchedulerService } from "./queues/reminder.queue";
 import { VapiService } from "./modules/vapi/vapi.service";
+
+// Refuse to boot a production server whose config cannot place or track calls
+if (ENV.NODE_ENV === "production") {
+  const configErrors = getProductionConfigErrors();
+  if (configErrors.length) {
+    console.error("❌ Production config is incomplete. Fix these env vars and restart:");
+    configErrors.forEach((e) => console.error(`   - ${e}`));
+    process.exit(1);
+  }
+} else {
+  getProductionConfigErrors().forEach((e) => console.warn(`⚠️  [Config, would block production] ${e}`));
+}
 
 const app = createApp();
 
@@ -16,8 +28,8 @@ SchedulerService.scheduleCallReconciliation().catch((err) =>
   console.error("❌ Could not register call reconciliation job:", err.message)
 );
 
-// Confirm the Vapi phone number (and its telephony provider) before the first call
-VapiService.verifyPhoneNumber();
+// Confirm the Vapi key, phone number (and its telephony provider) and assistant before the first call
+VapiService.verifySetup();
 
 const server = app.listen(ENV.PORT, () => {
   console.log(`\n=================================================`);

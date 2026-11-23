@@ -5,11 +5,17 @@
 ## Architecture
 
 This is a monorepo containing:
-- **`landing-page/`**: Next.js 15+ (App Router) + Tailwind CSS v4 + shadcn/ui.
-- **`dashboard/`**: *(Planned)* User portal for managing phone numbers, tasks, reminder schedules, and call logs.
-- **`backend/`**: *(Planned)* API server, scheduler, telephony/voice AI service (e.g. Twilio / LiveKit / Vapi / Retell / OpenAI Realtime).
+- **`landing-page/`**: Next.js (App Router) + Tailwind CSS v4. Marketing site, auth, onboarding and the dashboard.
+- **`backend/`**: Express + Prisma (MongoDB) API, BullMQ scheduler on Redis, and Vapi voice calls over a Vobiz SIP trunk.
+
+See [LAUNCH.md](LAUNCH.md) for the production setup checklist.
 
 ## Quick Start
+
+```bash
+docker run -d -p 6379:6379 redis:7   # the scheduler needs Redis
+npm run dev:backend                  # API on :5000 (copy backend/.env.example to backend/.env first)
+```
 
 ### Landing Page
 ```bash

@@ -3,6 +3,8 @@ import { ArrowRight } from "lucide-react";
 import { Wordmark } from "./SiteNav";
 import { Aurora } from "./Aurora";
 
+const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+
 const COLUMNS = [
   {
     title: "Product",
@@ -25,17 +27,9 @@ const COLUMNS = [
   {
     title: "Resources",
     links: [
-      { label: "Terms of Use", href: "#" },
-      { label: "Privacy Policy", href: "#" },
-      { label: "Support", href: "#" },
-    ],
-  },
-  {
-    title: "Connect",
-    links: [
-      { label: "X (Twitter)", href: "#" },
-      { label: "Instagram", href: "#" },
-      { label: "LinkedIn", href: "#" },
+      { label: "Terms of Use", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
+      ...(SUPPORT_EMAIL ? [{ label: "Support", href: `mailto:${SUPPORT_EMAIL}` }] : []),
     ],
   },
 ];
@@ -67,7 +61,7 @@ export function SiteFooter({ showCta = true }: { showCta?: boolean }) {
         </Aurora>
 
         <div className="px-6 pb-4 pt-6 sm:px-10 lg:px-14">
-          <div className="grid gap-10 md:grid-cols-[1.3fr_repeat(4,minmax(0,1fr))]">
+          <div className="grid gap-10 md:grid-cols-[1.3fr_repeat(3,minmax(0,1fr))]">
             <div>
               <Wordmark small />
               <p className="mt-3 max-w-[16rem] font-serif text-[15px] leading-relaxed text-zinc-600">
