@@ -13,6 +13,7 @@ import { VoicePicker } from "@/components/VoicePicker";
 import { PlanPickerModal } from "@/components/billing/PlanPickerModal";
 import { findVoice } from "@/lib/voices";
 import { planLabel } from "@/lib/plans";
+import { describeCallTime, formatHours, heldUntil, type CallingHours } from "@/lib/callingHours";
 import { updateUser } from "@/store/slices/authSlice";
 import {
   Settings,
@@ -27,6 +28,7 @@ import {
   History,
   Trash2,
   Calendar,
+  Moon,
   AlertCircle,
   PhoneForwarded,
 } from "lucide-react";
@@ -171,6 +173,14 @@ export default function DashboardPage() {
     ["SCHEDULED", "CALLING", "SNOOZED"].includes(r.status)
   );
   const isPaid = user?.plan === "BASIC" || user?.plan === "PRO";
+  const callingHours: CallingHours = {
+    start: user?.callingStartTime || "08:00",
+    end: user?.callingEndTime || "22:00",
+    timeZone: user?.timezone || "Asia/Kolkata",
+  };
+  // Calls due outside calling hours are held by the server until the window opens
+  const plannedAt = new Date(`${newDate}T${newTime}:00`);
+  const plannedHeldUntil = isNaN(plannedAt.getTime()) ? null : heldUntil(plannedAt, callingHours);
   const freeTestUsed = (user?.freeRemindersUsed || 0) >= 1;
   const isAtQuota =
     user?.plan === "PRO"
@@ -229,7 +239,14 @@ export default function DashboardPage() {
 
       const res = await api.post("/reminders", payload);
       if (res.data?.success) {
-        toast.success(`Voice call scheduled for ${scheduledDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}!`);
+        const held = heldUntil(scheduledDateTime, callingHours);
+        if (held) {
+          toast.info(
+            `Scheduled. That's outside your calling hours, so we'll call ${describeCallTime(held, scheduledDateTime, callingHours.timeZone)}.`
+          );
+        } else {
+          toast.success(`Voice call scheduled for ${scheduledDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}!`);
+        }
         setShowCreateModal(false);
         setNewTitle("");
         setNewDescription("");
@@ -507,6 +524,9 @@ export default function DashboardPage() {
                 const dateObj = new Date(reminder.scheduledAt);
                 const timeFormatted = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
                 const dateFormatted = dateObj.toLocaleDateString([], { month: "short", day: "numeric" });
+                const cardHeldUntil = ["SCHEDULED", "SNOOZED"].includes(reminder.status)
+                  ? heldUntil(dateObj, callingHours)
+                  : null;
 
                 return (
                   <div
@@ -598,6 +618,13 @@ export default function DashboardPage() {
                           <span className="text-neutral-400 font-mono text-[11px]">
                             Retries: {reminder.maxAttempts}x ({reminder.retryIntervalMinutes}m)
                           </span>
+                          {cardHeldUntil && (
+                            <span className="basis-full flex items-center gap-1 text-[11px] text-amber-700">
+                              <Moon className="h-3 w-3" />
+                              Outside your calling hours, so it will ring{" "}
+                              {describeCallTime(cardHeldUntil, dateObj, callingHours.timeZone)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -736,6 +763,26 @@ export default function DashboardPage() {
                   />
                 </div>
               </div>
+
+              {plannedHeldUntil && (
+                <div role="status" className="flex items-start gap-2.5 rounded-2xl bg-amber-50 px-3.5 py-3 text-xs text-amber-900">
+                  <Moon className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <p>
+                    That&apos;s outside your calling hours ({formatHours(callingHours)}), so we&apos;ll call{" "}
+                    <strong>{describeCallTime(plannedHeldUntil, plannedAt, callingHours.timeZone)}</strong> instead.{" "}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCreateModal(false);
+                        setShowSettingsModal(true);
+                      }}
+                      className="cursor-pointer font-medium underline underline-offset-2"
+                    >
+                      Change calling hours
+                    </button>
+                  </p>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>

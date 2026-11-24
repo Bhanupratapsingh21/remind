@@ -708,6 +708,8 @@ export class AuthController {
           preferredVoice: true,
           timezone: true,
           callTone: true,
+          callingStartTime: true,
+          callingEndTime: true,
           freeRemindersUsed: true,
           subscriptionStatus: true,
           currentPeriodEnd: true,

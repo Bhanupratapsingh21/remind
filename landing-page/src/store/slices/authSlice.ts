@@ -22,6 +22,8 @@ export interface User {
   subscriptionStatus?: string | null;
   currentPeriodEnd?: string | null;
   cancelAtPeriodEnd?: boolean;
+  callingStartTime?: string;
+  callingEndTime?: string;
 }
 
 export interface AuthState {

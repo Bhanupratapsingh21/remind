@@ -5,6 +5,8 @@ export function accountExtras(user: {
   subscriptionStatus?: string | null;
   currentPeriodEnd?: Date | null;
   cancelAtPeriodEnd?: boolean | null;
+  callingStartTime?: string | null;
+  callingEndTime?: string | null;
 }) {
   return {
     callTone: user.callTone || "friendly",
@@ -12,5 +14,8 @@ export function accountExtras(user: {
     subscriptionStatus: user.subscriptionStatus || null,
     currentPeriodEnd: user.currentPeriodEnd || null,
     cancelAtPeriodEnd: !!user.cancelAtPeriodEnd,
+    // The dashboard warns when a reminder falls outside these hours (the worker holds it until they open)
+    callingStartTime: user.callingStartTime || "08:00",
+    callingEndTime: user.callingEndTime || "22:00",
   };
 }
