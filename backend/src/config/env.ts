@@ -23,6 +23,14 @@ export const ENV = {
   // Brevo API key (xkeysib-...). When set, email goes over HTTPS instead of SMTP
   BREVO_API_KEY: process.env.BREVO_API_KEY || "",
 
+  // Dodo Payments. Optional: without the API key the billing routes answer 503 and the app keeps running.
+  DODO_PAYMENTS_API_KEY: process.env.DODO_PAYMENTS_API_KEY || "",
+  DODO_PAYMENTS_WEBHOOK_KEY: process.env.DODO_PAYMENTS_WEBHOOK_KEY || "",
+  // "test_mode" (test.dodopayments.com) or "live_mode" (live.dodopayments.com)
+  DODO_ENVIRONMENT: process.env.DODO_ENVIRONMENT === "live_mode" ? "live_mode" : "test_mode",
+  DODO_PRODUCT_BASIC: process.env.DODO_PRODUCT_BASIC || "",
+  DODO_PRODUCT_PRO: process.env.DODO_PRODUCT_PRO || "",
+
   // Redis & BullMQ
   REDIS_URL: process.env.REDIS_URL || "",
   REDIS_HOST: process.env.REDIS_HOST || "127.0.0.1",

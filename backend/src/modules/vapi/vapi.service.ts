@@ -1,6 +1,7 @@
 import axios from "axios";
 import { ENV } from "../../config/env";
 import { getLocalTimeInfo } from "../../utils/timezone.utils";
+import { VOICES, resolveVoice, resolveTone, TONE_INSTRUCTIONS, firstMessageFor, transcriberFor } from "./voices";
 
 export interface OutboundCallParams {
   phoneNumber: string;
@@ -13,6 +14,7 @@ export interface OutboundCallParams {
   attemptNumber: number;
   timezone: string;
   voicePersona?: string | null;
+  tone?: string | null;
 }
 
 export interface VapiCallResponse {
@@ -24,16 +26,6 @@ export interface VapiCallResponse {
   isMock?: boolean;
 }
 
-/**
- * App voice personas -> Vapi voice config. Adjust voiceIds here to change how each persona sounds.
- */
-const VOICE_PERSONAS: Record<string, { provider: string; voiceId: string }> = {
-  Elena: { provider: "vapi", voiceId: "Neha" },
-  Marcus: { provider: "vapi", voiceId: "Cole" },
-  Sofia: { provider: "vapi", voiceId: "Lily" },
-  James: { provider: "vapi", voiceId: "Harry" },
-};
-const DEFAULT_PERSONA = "Elena";
 
 /**
  * Hang-up safety net. The model is told to say "Goodbye!" and call endCall; if it forgets to call endCall,
@@ -62,7 +54,7 @@ export class VapiService {
   }
 
   public static getVoiceConfig(persona?: string | null) {
-    return VOICE_PERSONAS[persona || DEFAULT_PERSONA] || VOICE_PERSONAS[DEFAULT_PERSONA];
+    return { ...VOICES[resolveVoice(persona)] };
   }
 
   /**
@@ -109,6 +101,7 @@ INSTRUCTIONS:
    - If they ask what this reminder is about: Provide details using the task description.
    - If they want to create a new reminder (e.g. "Remind me to call Rahul tomorrow"): Call the "create_reminder" tool.
 3. Be concise, polite, accountability-driven, and natural. Keep responses brief since this is a phone call.
+   Speaking style: ${TONE_INSTRUCTIONS[resolveTone(params.tone)]}
 4. After the matching tool succeeds, confirm briefly and end the call.
 
 ENDING THE CALL (calls are billed per minute, so never leave the line open):
@@ -272,7 +265,8 @@ ENDING THE CALL (calls are billed per minute, so never leave the line open):
           tools: this.getToolDefinitions(),
         },
         voice: this.getVoiceConfig(params.voicePersona),
-        firstMessage: `Hey ${params.userName}, this is your reminder for: ${params.title}. Are you taking care of it now?`,
+        ...(transcriberFor(resolveTone(params.tone)) ? { transcriber: transcriberFor(resolveTone(params.tone)) } : {}),
+        firstMessage: firstMessageFor(resolveTone(params.tone), params.userName, params.title),
         ...CALL_LIMITS,
         server,
         metadata,

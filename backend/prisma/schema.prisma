@@ -8,33 +8,42 @@ generator client {
 }
 
 model User {
-  id                   String            @id @default(auto()) @map("_id") @db.ObjectId
-  name                 String
-  email                String            @unique
-  username             String?           @unique
-  phone                String?           @unique
-  password             String
-  isPhoneVerified      Boolean           @default(false)
-  isEmailVerified      Boolean           @default(false)
-  isOnboarded          Boolean           @default(false)
-  referralSource       String?
-  plan                 String            @default("TRIAL") // TRIAL, PRO, LIFETIME
-  trialEndsAt          DateTime?
-  maxReminders         Int               @default(2) // 2 reminders limit on trial
-  preferredVoice       String            @default("Elena")
-  timezone             String            @default("Asia/Kolkata")
-  callingStartTime     String            @default("08:00")
-  callingEndTime       String            @default("22:00")
-  defaultMaxAttempts   Int               @default(3)
-  defaultRetryInterval Int               @default(10)
-  quietHoursStart      String            @default("22:00")
-  quietHoursEnd        String            @default("08:00")
-  settings             UserSettings?
-  reminders            Reminder[]
-  callLogs             CallLog[]
-  refreshTokens        RefreshToken[]
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  id                    String         @id @default(auto()) @map("_id") @db.ObjectId
+  name                  String
+  email                 String         @unique
+  username              String?        @unique
+  phone                 String?        @unique
+  password              String
+  isPhoneVerified       Boolean        @default(false)
+  isEmailVerified       Boolean        @default(false)
+  isOnboarded           Boolean        @default(false)
+  referralSource        String?
+  plan                  String         @default("TRIAL") // TRIAL (free: one test call), BASIC (3 active), PRO (unlimited)
+  trialEndsAt           DateTime?
+  maxReminders          Int            @default(2) // 2 reminders limit on trial
+  preferredVoice        String         @default("Naina")
+  callTone              String? // friendly | professional | disciplined | gentle | hinglish (null = friendly)
+  freeRemindersUsed     Int? // reminders created while on the free plan (1 free test call)
+  // Dodo Payments subscription (plan = BASIC | PRO while active)
+  dodoCustomerId        String?
+  subscriptionId        String?
+  subscriptionStatus    String?
+  subscriptionProductId String?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean?
+  timezone              String         @default("Asia/Kolkata")
+  callingStartTime      String         @default("08:00")
+  callingEndTime        String         @default("22:00")
+  defaultMaxAttempts    Int            @default(3)
+  defaultRetryInterval  Int            @default(10)
+  quietHoursStart       String         @default("22:00")
+  quietHoursEnd         String         @default("08:00")
+  settings              UserSettings?
+  reminders             Reminder[]
+  callLogs              CallLog[]
+  refreshTokens         RefreshToken[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   @@map("users")
 }
@@ -70,9 +79,9 @@ model RefreshToken {
 
 model OtpVerification {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  identifier String   // Mobile number with country code, or email address
-  code       String   // 6-digit OTP code (hashed or direct)
-  type       String   // "PHONE" | "EMAIL"
+  identifier String // Mobile number with country code, or email address
+  code       String // 6-digit OTP code (hashed or direct)
+  type       String // "PHONE" | "EMAIL"
   expiresAt  DateTime
   consumed   Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -82,26 +91,26 @@ model OtpVerification {
 }
 
 model Reminder {
-  id                    String            @id @default(auto()) @map("_id") @db.ObjectId
-  userId                String            @db.ObjectId
-  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title                 String
-  task                  String?           // Backward compatibility
-  description           String?
-  priority              String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  status                String            @default("SCHEDULED") // SCHEDULED, CALLING, ACKNOWLEDGED, COMPLETED, SNOOZED, MISSED, CANCELLED, FAILED
-  scheduledAt           DateTime
-  timezone              String            @default("Asia/Kolkata")
-  notificationChannel   String            @default("PHONE") // PHONE, WHATSAPP, PUSH, SMS
-  maxAttempts           Int               @default(3)
-  retryIntervalMinutes  Int               @default(10)
-  completedAt           DateTime?
-  voicePersona          String?           @default("Elena")
-  retryCount            Int               @default(0)
-  attempts              ReminderAttempt[]
-  callLogs              CallLog[]
-  createdAt             DateTime          @default(now())
-  updatedAt             DateTime          @updatedAt
+  id                   String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId               String            @db.ObjectId
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  task                 String? // Backward compatibility
+  description          String?
+  priority             String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status               String            @default("SCHEDULED") // SCHEDULED, CALLING, ACKNOWLEDGED, COMPLETED, SNOOZED, MISSED, CANCELLED, FAILED
+  scheduledAt          DateTime
+  timezone             String            @default("Asia/Kolkata")
+  notificationChannel  String            @default("PHONE") // PHONE, WHATSAPP, PUSH, SMS
+  maxAttempts          Int               @default(3)
+  retryIntervalMinutes Int               @default(10)
+  completedAt          DateTime?
+  voicePersona         String?           @default("Elena")
+  retryCount           Int               @default(0)
+  attempts             ReminderAttempt[]
+  callLogs             CallLog[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
 
   @@index([userId, scheduledAt])
   @@index([userId, status])
@@ -109,21 +118,21 @@ model Reminder {
 }
 
 model ReminderAttempt {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  reminderId     String    @db.ObjectId
-  reminder       Reminder  @relation(fields: [reminderId], references: [id], onDelete: Cascade)
-  attemptNumber  Int
-  channel        String    @default("PHONE")
-  status         String    @default("INITIATED") // INITIATED, RINGING, ANSWERED, COMPLETED, NO_ANSWER, BUSY, FAILED, CANCELLED
-  vapiCallId     String?
-  startedAt      DateTime?
-  answeredAt     DateTime?
-  endedAt        DateTime?
-  duration       Int?
-  failureReason  String?
-  transcript     String?
-  userResponse   String?
-  createdAt      DateTime  @default(now())
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  reminderId    String    @db.ObjectId
+  reminder      Reminder  @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  attemptNumber Int
+  channel       String    @default("PHONE")
+  status        String    @default("INITIATED") // INITIATED, RINGING, ANSWERED, COMPLETED, NO_ANSWER, BUSY, FAILED, CANCELLED
+  vapiCallId    String?
+  startedAt     DateTime?
+  answeredAt    DateTime?
+  endedAt       DateTime?
+  duration      Int?
+  failureReason String?
+  transcript    String?
+  userResponse  String?
+  createdAt     DateTime  @default(now())
 
   @@unique([reminderId, attemptNumber])
   @@index([reminderId])
@@ -132,17 +141,17 @@ model ReminderAttempt {
 }
 
 model CallLog {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
-  reminderId   String    @db.ObjectId
-  reminder     Reminder  @relation(fields: [reminderId], references: [id], onDelete: Cascade)
-  userId       String    @db.ObjectId
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  reminderId   String   @db.ObjectId
+  reminder     Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   callSid      String?
   duration     Int?
-  status       String    @default("INITIATED") // INITIATED, COMPLETED, NO_ANSWER, BUSY, FAILED
+  status       String   @default("INITIATED") // INITIATED, COMPLETED, NO_ANSWER, BUSY, FAILED
   transcript   String?
-  userResponse String?   // "DONE" | "RESCHEDULE_30M" | "RESCHEDULE_1H" | "UNKNOWN"
-  createdAt    DateTime  @default(now())
+  userResponse String? // "DONE" | "RESCHEDULE_30M" | "RESCHEDULE_1H" | "UNKNOWN"
+  createdAt    DateTime @default(now())
 
   @@index([userId])
   @@index([reminderId])

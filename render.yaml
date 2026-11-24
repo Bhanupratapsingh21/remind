@@ -54,6 +54,19 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      # Dodo Payments (optional until you sell plans)
+      - key: DODO_PAYMENTS_API_KEY
+        sync: false
+      - key: DODO_PAYMENTS_WEBHOOK_KEY
+        sync: false
+      - key: DODO_ENVIRONMENT
+        value: test_mode
+      - key: DODO_PRODUCT_BASIC
+        sync: false
+      - key: DODO_PRODUCT_PRO
+        sync: false
       # Optional: leave unset to use Render's own URL (RENDER_EXTERNAL_URL) for Vapi webhooks.
       # Set it once you put the API on a custom domain such as https://api.yourdomain.com
       - key: WEBHOOK_BASE_URL
