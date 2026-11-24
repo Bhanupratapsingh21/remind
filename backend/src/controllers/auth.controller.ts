@@ -733,10 +733,32 @@ export class AuthController {
    * GET /api/auth/me
    */
   public static async getMe(req: AuthenticatedRequest, res: Response): Promise<void> {
+    // Read fresh so plan changes from payment webhooks show up immediately
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      res.status(401).json({ success: false, message: "User session no longer exists" });
+      return;
+    }
     res.status(200).json({
       success: true,
       data: {
-        user: req.user,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          phone: user.phone,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          isOnboarded: user.isOnboarded,
+          plan: user.plan,
+          trialEndsAt: user.trialEndsAt,
+          maxReminders: user.maxReminders,
+          preferredVoice: user.preferredVoice,
+          timezone: user.timezone,
+          createdAt: user.createdAt,
+          ...accountExtras(user),
+        },
       },
     });
   }

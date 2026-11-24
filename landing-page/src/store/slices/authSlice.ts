@@ -16,6 +16,12 @@ export interface User {
   preferredVoice?: string;
   timezone?: string;
   avatarUrl?: string;
+  callTone?: string;
+  /** Reminders created without a paid plan (the free test call) */
+  freeRemindersUsed?: number;
+  subscriptionStatus?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelAtPeriodEnd?: boolean;
 }
 
 export interface AuthState {

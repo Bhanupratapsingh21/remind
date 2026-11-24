@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import prisma from "../../config/db";
+import { isPaidPlan } from "../billing/plans";
 import { CallService } from "./call.service";
 
 export class CallController {
@@ -54,6 +55,19 @@ export class CallController {
       if (!userId) {
         res.status(401).json({ success: false, message: "Unauthorized" });
         return;
+      }
+
+      // Free accounts get one test reminder; "call now" must not turn it into unlimited free calls
+      if (!isPaidPlan(req.user?.plan)) {
+        const calls = await prisma.reminderAttempt.count({ where: { reminderId: id, vapiCallId: { not: null } } });
+        if (calls > 0) {
+          res.status(402).json({
+            success: false,
+            code: "PLAN_LIMIT",
+            message: "Calling again on demand is part of Basic and Pro. Choose a plan to keep going.",
+          });
+          return;
+        }
       }
 
       await CallService.manualRetry(id, userId);

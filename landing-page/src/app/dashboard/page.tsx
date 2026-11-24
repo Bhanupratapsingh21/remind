@@ -9,6 +9,11 @@ import { toast } from "sonner";
 import { AgentMascot } from "@/components/AgentMascot";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SettingsModal } from "@/components/SettingsModal";
+import { VoicePicker } from "@/components/VoicePicker";
+import { PlanPickerModal } from "@/components/billing/PlanPickerModal";
+import { findVoice } from "@/lib/voices";
+import { planLabel } from "@/lib/plans";
+import { updateUser } from "@/store/slices/authSlice";
 import {
   Settings,
   PhoneCall,
@@ -80,6 +85,7 @@ export default function DashboardPage() {
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [planReason, setPlanReason] = useState<string | null>(null);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedReminderForHistory, setSelectedReminderForHistory] = useState<ReminderItem | null>(null);
@@ -90,7 +96,7 @@ export default function DashboardPage() {
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [newTime, setNewTime] = useState("10:00");
   const [newPriority, setNewPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("HIGH");
-  const [newPersona, setNewPersona] = useState(user?.preferredVoice || "Elena");
+  const [newPersona, setNewPersona] = useState(() => findVoice(user?.preferredVoice).id);
   const [newMaxAttempts, setNewMaxAttempts] = useState(3);
   const [newRetryInterval, setNewRetryInterval] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,11 +134,54 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, user?.isOnboarded, fetchReminders]);
 
-  const maxAllowedReminders = user?.maxReminders || 2;
+  // Keep plan and subscription fields fresh (the saved user in localStorage can be stale). After a Dodo
+  // checkout the plan flips via webhook, so poll briefly until it shows up.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fromCheckout = new URLSearchParams(window.location.search).get("billing") === "success";
+    let cancelled = false;
+    const refresh = async (triesLeft: number) => {
+      try {
+        const res = await api.get("/auth/me");
+        const fresh = res.data?.data?.user;
+        if (cancelled || !fresh) return;
+        dispatch(updateUser(fresh));
+        const paid = fresh.plan === "BASIC" || fresh.plan === "PRO";
+        if (fromCheckout && paid) {
+          toast.success(`You're on ${planLabel(fresh.plan)}. Thanks for subscribing!`);
+          window.history.replaceState(null, "", "/dashboard");
+          return;
+        }
+        if (fromCheckout && triesLeft > 0) setTimeout(() => refresh(triesLeft - 1), 3000);
+        else if (fromCheckout) {
+          toast.info("Payment received. Your plan will update in a moment; refresh if it doesn't.");
+          window.history.replaceState(null, "", "/dashboard");
+        }
+      } catch {
+        // ignore; the saved user stays in place
+      }
+    };
+    refresh(10);
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, dispatch]);
+
   const activeReminders = reminders.filter((r) =>
     ["SCHEDULED", "CALLING", "SNOOZED"].includes(r.status)
   );
-  const isAtQuota = user?.plan === "TRIAL" && activeReminders.length >= maxAllowedReminders;
+  const isPaid = user?.plan === "BASIC" || user?.plan === "PRO";
+  const freeTestUsed = (user?.freeRemindersUsed || 0) >= 1;
+  const isAtQuota =
+    user?.plan === "PRO"
+      ? false
+      : user?.plan === "BASIC"
+      ? activeReminders.length >= 3
+      : freeTestUsed;
+  const quotaMessage =
+    user?.plan === "BASIC"
+      ? "Basic includes 3 active reminders. Upgrade to Pro for unlimited."
+      : "You've used your free test call. Choose a plan to keep getting reminder calls.";
 
   const handleLogout = async () => {
     try {
@@ -147,6 +196,7 @@ export default function DashboardPage() {
 
   const handleOpenCreateModal = () => {
     if (isAtQuota) {
+      setPlanReason(quotaMessage);
       setShowUpgradeModal(true);
       return;
     }
@@ -183,11 +233,18 @@ export default function DashboardPage() {
         setShowCreateModal(false);
         setNewTitle("");
         setNewDescription("");
+        if (!isPaid) dispatch(updateUser({ freeRemindersUsed: (user?.freeRemindersUsed || 0) + 1 }));
         await fetchReminders();
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || "Failed to create reminder";
-      toast.error(msg);
+      if (err.response?.data?.code === "PLAN_LIMIT") {
+        setShowCreateModal(false);
+        setPlanReason(msg);
+        setShowUpgradeModal(true);
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -316,29 +373,34 @@ export default function DashboardPage() {
         }
       />
 
-      {/* 3-DAY FREE TRIAL BANNER */}
+      {/* PLAN BANNER */}
       <div className="mx-auto max-w-6xl px-4 pt-2 sm:px-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 rounded-[20px] bg-zinc-950 px-5 py-3.5 text-white">
           <div className="flex items-center gap-2.5 text-xs">
             <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="font-semibold tracking-wide">
-              {user?.plan === "PRO" ? "Pro Subscription:" : "Free plan:"}
-            </span>
+            <span className="font-semibold tracking-wide">{planLabel(user?.plan)} plan:</span>
             <span className="text-neutral-300 font-mono">
-              {user?.plan === "PRO" ? "Unlimited Reminders" : `${activeReminders.length}/${maxAllowedReminders} active reminders`}
+              {user?.plan === "PRO"
+                ? "Unlimited reminders"
+                : user?.plan === "BASIC"
+                ? `${activeReminders.length}/3 active reminders`
+                : freeTestUsed
+                ? "Free test call used"
+                : "1 free test call left"}
+              {isPaid && user?.cancelAtPeriodEnd && user?.currentPeriodEnd
+                ? ` · ends ${new Date(user.currentPeriodEnd).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`
+                : ""}
             </span>
           </div>
 
-          {user?.plan !== "PRO" && (
-            <button
-              type="button"
-              onClick={() => setShowUpgradeModal(true)}
-              className="text-[11px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 flex items-center gap-1 cursor-pointer"
-            >
-              <span>Upgrade to Unlimited Pro</span>
-              <ArrowUpRight className="h-3 w-3" />
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowUpgradeModal(true)}
+            className="text-[11px] font-medium text-amber-300 hover:text-amber-200 underline underline-offset-2 flex items-center gap-1 cursor-pointer"
+          >
+            <span>{user?.plan === "PRO" ? "Manage plan" : user?.plan === "BASIC" ? "Upgrade to Pro" : "Choose a plan"}</span>
+            <ArrowUpRight className="h-3 w-3" />
+          </button>
         </div>
       </div>
 
@@ -394,10 +456,10 @@ export default function DashboardPage() {
 
           <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
-              Voice Persona
+              Voice
             </span>
             <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-[#151515]">
-              {user?.preferredVoice || "Elena"}
+              {findVoice(user?.preferredVoice).name}
             </p>
             <p className="mt-1 text-xs text-neutral-500">Your agent's voice</p>
           </div>
@@ -530,7 +592,7 @@ export default function DashboardPage() {
                           </span>
                           <span>•</span>
                           <span className="text-neutral-400 font-mono text-[11px]">
-                            Voice: {reminder.voicePersona || "Elena"}
+                            Voice: {findVoice(reminder.voicePersona).name}
                           </span>
                           <span>•</span>
                           <span className="text-neutral-400 font-mono text-[11px]">
@@ -692,21 +754,13 @@ export default function DashboardPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-neutral-500 mb-1.5">
-                    Voice Persona
-                  </label>
-                  <select
-                    value={newPersona}
-                    onChange={(e) => setNewPersona(e.target.value)}
-                    className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900 bg-white"
-                  >
-                    <option value="Elena">Elena (Friendly & Warm)</option>
-                    <option value="Marcus">Marcus (Direct & Assertive)</option>
-                    <option value="Sofia">Sofia (Calm & Mindful)</option>
-                    <option value="James">James (Professional)</option>
-                  </select>
-                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-neutral-500 mb-1.5">
+                  Voice <span className="normal-case tracking-normal text-neutral-400">· tap play to hear it</span>
+                </label>
+                <VoicePicker value={newPersona} onChange={setNewPersona} />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -845,60 +899,14 @@ export default function DashboardPage() {
 
       {showSettingsModal && <SettingsModal onClose={() => setShowSettingsModal(false)} />}
 
-      {/* UPGRADE MODAL */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl text-center">
-            <div className="flex justify-center">
-              <AgentMascot size={72} />
-            </div>
-
-            <h3 className="text-xl font-medium text-[#151515] tracking-tight">
-              Free Reminder Limit Reached
-            </h3>
-
-            <p className="mt-2 text-xs sm:text-sm text-neutral-500 leading-relaxed">
-              You have <strong>{maxAllowedReminders} active reminders</strong>, the free limit.
-              Complete or cancel one to add another. Pro with unlimited reminders is coming soon.
-            </p>
-
-            <div className="mt-6 p-4 bg-amber-50/60 rounded-[20px] text-left space-y-2 text-xs">
-              <div className="flex items-center gap-2 text-neutral-800">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>Unlimited automated voice phone calls</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-800">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>Conversational voice rescheduling & snoozing</span>
-              </div>
-              <div className="flex items-center gap-2 text-neutral-800">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>Custom retry intervals & calling hours control</span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowUpgradeModal(false);
-                  toast.info("Pro upgrades are not open yet.");
-                }}
-                className="w-full rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer"
-              >
-                Upgrade to Pro
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowUpgradeModal(false)}
-                className="w-full rounded-full px-4 py-2 text-xs text-neutral-500 hover:text-black transition cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <PlanPickerModal
+        open={showUpgradeModal}
+        reason={planReason}
+        onClose={() => {
+          setShowUpgradeModal(false);
+          setPlanReason(null);
+        }}
+      />
     </div>
   );
 }
