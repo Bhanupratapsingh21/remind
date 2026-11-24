@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { ContactLine, LegalPage, LegalSection } from "@/components/site/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Terms of Use · Remind",
+  title: "Terms of Use",
+  alternates: { canonical: "/terms" },
   description: "The rules for using Remind.",
 };
 

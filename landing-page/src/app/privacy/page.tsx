@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { ContactLine, LegalPage, LegalSection } from "@/components/site/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Remind",
+  title: "Privacy Policy",
+  alternates: { canonical: "/privacy" },
   description: "What Remind collects, why, and who processes it.",
 };
 
