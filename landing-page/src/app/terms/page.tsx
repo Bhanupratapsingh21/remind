@@ -33,14 +33,16 @@ export default function TermsPage() {
 
       <LegalSection title="Fair use">
         <p>
-          Trial and free accounts have limits on active reminders and daily calls. We may suspend accounts that abuse
+          Every plan has limits on active reminders and daily calls, and new accounts get one free test reminder. We may suspend accounts that abuse
           the service, attempt to call third parties, or try to disrupt it.
         </p>
       </LegalSection>
 
       <LegalSection title="Plans and changes">
         <p>
-          Features and prices may change. We will show the current plan details in the app before you pay for anything.
+          Paid plans are monthly subscriptions billed in INR through our payment provider, Dodo Payments, and renew
+          automatically until you cancel. When you cancel, your plan stays active until the end of the period you have
+          paid for. Features and prices may change; we will show the current plan details in the app before you pay.
         </p>
       </LegalSection>
 

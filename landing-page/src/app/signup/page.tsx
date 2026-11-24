@@ -434,7 +434,7 @@ export default function SignUpPage() {
           }
           statusMessage={
             <div className="flex items-center justify-between text-xs text-neutral-400 pt-2 font-mono">
-              <span>At least 6 characters • 3-day free plan included</span>
+              <span>At least 6 characters • One free test call included</span>
               {password.length >= 6 && (
                 <span className="text-neutral-900 font-medium">Press [ enter ↵ ]</span>
               )}

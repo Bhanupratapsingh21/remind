@@ -89,7 +89,8 @@ export class ReminderService {
 
     // The free plan's one test call is used up by creating it, even if the reminder is later deleted
     if (!isPaidPlan(user.plan)) {
-      await prisma.user.update({ where: { id: user.id }, data: { freeRemindersUsed: { increment: 1 } } });
+      // Set, not { increment }: on MongoDB increment is a no-op while the field is missing (older users)
+      await prisma.user.update({ where: { id: user.id }, data: { freeRemindersUsed: (user.freeRemindersUsed || 0) + 1 } });
     }
 
     // Schedule BullMQ job for when reminder is due
