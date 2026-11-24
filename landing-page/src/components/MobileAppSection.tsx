@@ -1,28 +1,16 @@
 "use client";
 
-import { Bell, History, Smartphone, Timer } from "lucide-react";
+import { Bell, History, Timer } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
 import { Reveal } from "@/components/site/Reveal";
 import { PhoneCallMock } from "@/components/PhoneCallMock";
+import { AppStoreBadge, GooglePlayBadge } from "@/components/landing/StoreBadges";
 
 const PERKS = [
   { icon: Bell, title: "Push + call", text: "A silent heads-up before the phone rings." },
   { icon: Timer, title: "One-tap snooze", text: "Push the call back 10, 30 or 60 minutes." },
   { icon: History, title: "Call history", text: "Transcripts and outcomes for every reminder." },
 ];
-
-/* Store badges, dark pills with "Coming soon" since the apps are not published yet */
-function StoreBadge({ store, note }: { store: string; note: string }) {
-  return (
-    <span className="flex items-center gap-3 rounded-2xl bg-white px-4 py-2.5 text-zinc-950">
-      <Smartphone className="h-6 w-6 text-zinc-500" />
-      <span className="leading-tight">
-        <span className="block text-[10px] uppercase tracking-wider text-zinc-500">{note}</span>
-        <span className="block text-[15px] font-medium">{store}</span>
-      </span>
-    </span>
-  );
-}
 
 export function MobileAppSection() {
   return (
@@ -55,9 +43,17 @@ export function MobileAppSection() {
             ))}
           </ul>
 
-          <div className="mt-8 flex flex-wrap gap-3">
-            <StoreBadge store="App Store" note="Coming soon" />
-            <StoreBadge store="Google Play" note="Coming soon" />
+          <div className="mt-9">
+            <p className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-amber-200/90">
+              <span className="whitespace-nowrap rounded-full bg-amber-300/15 px-2.5 py-1 ring-1 ring-amber-300/30">
+                Coming soon
+              </span>
+              <span className="whitespace-nowrap text-white/50">iOS &amp; Android</span>
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <AppStoreBadge />
+              <GooglePlayBadge />
+            </div>
           </div>
         </Reveal>
 
