@@ -88,7 +88,16 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       // Re-read so the stored, normalised phone number is what the dashboard shows
       const res = await api.get("/users/settings");
       const u = res.data?.data?.user || {};
-      dispatch(updateUser({ phone: u.phone, timezone: u.timezone, preferredVoice: u.preferredVoice, callTone: u.callTone || DEFAULT_TONE }));
+      dispatch(
+        updateUser({
+          phone: u.phone,
+          timezone: u.timezone,
+          preferredVoice: u.preferredVoice,
+          callTone: u.callTone || DEFAULT_TONE,
+          callingStartTime: u.callingStartTime,
+          callingEndTime: u.callingEndTime,
+        })
+      );
       toast.success("Settings saved.");
       onClose();
     } catch (err) {
