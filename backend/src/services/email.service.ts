@@ -67,6 +67,13 @@ export class EmailService {
       </html>
     `;
 
+    const text = `Your verification code is: ${code}. It expires in 5 minutes.`;
+
+    // Brevo's HTTPS API first when a key is set: hosts like Render can block outbound SMTP ports
+    if (ENV.BREVO_API_KEY) {
+      return this.sendViaBrevoApi(toEmail, subject, text, htmlContent);
+    }
+
     // If Brevo SMTP is configured, attempt sending live email
     if (transporter && ENV.SMTP_PASS) {
       try {
@@ -74,7 +81,7 @@ export class EmailService {
           from: ENV.SMTP_FROM,
           to: toEmail,
           subject,
-          text: `Your verification code is: ${code}. It expires in 5 minutes.`,
+          text,
           html: htmlContent,
         });
 
@@ -90,6 +97,34 @@ export class EmailService {
       console.log(`✉️ Recipient: ${toEmail}`);
       console.log(`🔑 Verification Code: ${code}`);
       return true;
+    }
+  }
+
+  /** Sends through Brevo's transactional email API (HTTPS, port 443) */
+  private static async sendViaBrevoApi(toEmail: string, subject: string, text: string, html: string): Promise<boolean> {
+    // SMTP_FROM looks like "Name <address>"; the sender address must be verified in Brevo
+    const match = ENV.SMTP_FROM.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+    const sender = match ? { name: match[1].trim() || undefined, email: match[2].trim() } : { email: ENV.SMTP_FROM.trim() };
+
+    try {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: { "api-key": ENV.BREVO_API_KEY, "content-type": "application/json", accept: "application/json" },
+        body: JSON.stringify({ sender, to: [{ email: toEmail }], subject, textContent: text, htmlContent: html }),
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!res.ok) {
+        console.error(`❌ [BREVO API ERROR] ${res.status} sending to ${toEmail}: ${await res.text()}`);
+        return false;
+      }
+
+      const body = (await res.json()) as { messageId?: string };
+      console.log(`✉️ [BREVO API SUCCESS] Sent OTP to ${toEmail}. Message ID: ${body.messageId}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ [BREVO API ERROR] Failed to send email to ${toEmail}:`, error);
+      return false;
     }
   }
 }

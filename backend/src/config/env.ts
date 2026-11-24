@@ -20,6 +20,8 @@ export const ENV = {
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
   SMTP_FROM: process.env.SMTP_FROM || "Eavara OTP <eavara@bpss.tech>",
+  // Brevo API key (xkeysib-...). When set, email goes over HTTPS instead of SMTP
+  BREVO_API_KEY: process.env.BREVO_API_KEY || "",
 
   // Redis & BullMQ
   REDIS_URL: process.env.REDIS_URL || "",
