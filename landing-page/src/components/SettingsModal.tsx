@@ -9,6 +9,41 @@ import { VoicePicker } from "@/components/VoicePicker";
 import { TonePicker } from "@/components/TonePicker";
 import { DEFAULT_TONE, findVoice } from "@/lib/voices";
 
+const toMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+const to12h = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Date(2000, 0, 1, h || 0, m || 0).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+};
+
+/** Says the calling window in words and flags a likely AM/PM slip (e.g. "until 11:55" meaning 11:55 PM) */
+function CallingWindowNote({ start, end }: { start: string; end: string }) {
+  if (!start || !end) return null;
+  const s = toMinutes(start);
+  const e = toMinutes(end);
+  const overnight = e <= s;
+  const likelySlip = !overnight && e < 12 * 60;
+  const pm = (() => {
+    const [h, m] = end.split(":").map(Number);
+    return `${String((h || 0) + 12).padStart(2, "0")}:${String(m || 0).padStart(2, "0")}`;
+  })();
+  return (
+    <div className="-mt-2 space-y-1">
+      <p className="text-[12px] text-neutral-600">
+        We&apos;ll call you between <strong>{to12h(start)}</strong> and <strong>{to12h(end)}</strong>
+        {overnight ? " (overnight)" : ""}. Reminders outside these hours ring when the window opens.
+      </p>
+      {likelySlip && (
+        <p className="rounded-xl bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
+          Calls stop at {to12h(end)} in the morning. Did you mean {to12h(pm)}? Switch the time to PM if so.
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 const labelCls = "block text-xs font-mono uppercase tracking-wider text-neutral-500 mb-1.5";
 const inputCls =
@@ -194,9 +229,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
             </div>
-            <p className="-mt-2 text-[11px] text-neutral-400">
-              Reminders due outside these hours ring at the next allowed time.
-            </p>
+            <CallingWindowNote start={form.callingStartTime} end={form.callingEndTime} />
 
             <div>
               <p className={labelCls}>

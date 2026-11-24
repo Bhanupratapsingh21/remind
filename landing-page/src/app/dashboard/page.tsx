@@ -76,6 +76,9 @@ interface ReminderItem {
   updatedAt: string;
 }
 
+/** Finished reminders: no calling, snoozing, completing or cancelling any more */
+const isClosed = (status: string) => status === "COMPLETED" || status === "CANCELLED";
+
 export default function DashboardPage() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -311,6 +314,12 @@ export default function DashboardPage() {
       if (res.data?.success) {
         toast.success("Reminder cancelled.");
         await fetchReminders();
+        // Cancelling before any call gives a free test back; pick up the new count
+        if (!isPaid) {
+          const me = await api.get("/auth/me").catch(() => null);
+          const fresh = me?.data?.data?.user;
+          if (fresh) dispatch(updateUser(fresh));
+        }
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Failed to cancel reminder");
@@ -641,7 +650,7 @@ export default function DashboardPage() {
                         <span>History</span>
                       </button>
 
-                      {reminder.status !== "COMPLETED" && (
+                      {!isClosed(reminder.status) && (
                         <>
                           <button
                             type="button"
@@ -674,14 +683,16 @@ export default function DashboardPage() {
                         </>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() => handleCancel(reminder.id)}
-                        title="Cancel reminder"
-                        className="rounded-full p-1.5 text-neutral-400 hover:text-rose-600 transition cursor-pointer"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {!isClosed(reminder.status) && (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(reminder.id)}
+                          title="Cancel reminder"
+                          className="rounded-full p-1.5 text-neutral-400 hover:text-rose-600 transition cursor-pointer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
