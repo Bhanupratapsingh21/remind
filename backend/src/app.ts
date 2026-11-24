@@ -5,6 +5,8 @@ import authRoutes from "./routes/auth.routes";
 import reminderRoutes from "./routes/reminder.routes";
 import userRoutes from "./routes/user.routes";
 import webhookRoutes from "./routes/webhook.routes";
+import billingRoutes from "./routes/billing.routes";
+import { BillingController } from "./modules/billing/billing.controller";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import { ENV } from "./config/env";
@@ -21,6 +23,8 @@ export const createApp = () => {
       credentials: true,
     })
   );
+  // Dodo signs the exact bytes it sends, so this route reads the raw body and must come before express.json()
+  app.post("/api/webhooks/dodo", express.raw({ type: "*/*", limit: "1mb" }), BillingController.webhook);
   app.use(express.json());
   app.use(cookieParser());
 
@@ -60,6 +64,7 @@ export const createApp = () => {
   app.use("/api/reminders", reminderRoutes);
   app.use("/api/users", userRoutes);
   app.use("/api/webhooks", webhookRoutes);
+  app.use("/api/billing", billingRoutes);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

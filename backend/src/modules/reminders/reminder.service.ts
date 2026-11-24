@@ -1,6 +1,32 @@
 import prisma from "../../config/db";
 import { ReminderRepository } from "./reminder.repository";
 import { SchedulerService } from "../../queues/reminder.queue";
+import { resolveVoice } from "../vapi/voices";
+import { PLAN_LIMITS, FREE_TEST_REMINDERS, isPaidPlan } from "../billing/plans";
+
+/** Thrown when the user's plan doesn't allow another reminder; the frontend opens the plan picker */
+export class PlanLimitError extends Error {
+  public readonly code = "PLAN_LIMIT";
+}
+
+async function assertPlanAllows(user: { id: string; plan: string; freeRemindersUsed: number | null }) {
+  if (user.plan === "PRO") return;
+
+  if (user.plan === "BASIC") {
+    const activeCount = await ReminderRepository.countActiveByUser(user.id);
+    if (activeCount >= PLAN_LIMITS.BASIC) {
+      throw new PlanLimitError(
+        `Basic includes ${PLAN_LIMITS.BASIC} active reminders. Complete or delete one, or upgrade to Pro for unlimited.`
+      );
+    }
+    return;
+  }
+
+  // Free (no subscription): one test reminder in total
+  if ((user.freeRemindersUsed || 0) >= FREE_TEST_REMINDERS) {
+    throw new PlanLimitError("You've used your free test call. Choose Basic or Pro to keep getting reminder calls.");
+  }
+}
 
 export class ReminderService {
   /**
@@ -28,6 +54,7 @@ export class ReminderService {
         maxReminders: true,
         timezone: true,
         preferredVoice: true,
+        freeRemindersUsed: true,
       },
     });
 
@@ -35,15 +62,7 @@ export class ReminderService {
       throw new Error("User not found");
     }
 
-    // Quota validation for trial accounts
-    if (user.plan === "TRIAL") {
-      const activeCount = await ReminderRepository.countActiveByUser(user.id);
-      if (activeCount >= user.maxReminders) {
-        throw new Error(
-          `Trial limit reached (${user.maxReminders} active reminders). Please complete or delete existing reminders, or upgrade to Pro.`
-        );
-      }
-    }
+    await assertPlanAllows(user);
 
     const scheduledDate = new Date(params.scheduledAt);
     if (isNaN(scheduledDate.getTime())) {
@@ -53,7 +72,7 @@ export class ReminderService {
     const maxAttempts = params.retryPolicy?.maxAttempts ?? 3;
     const retryIntervalMinutes = params.retryPolicy?.retryIntervalMinutes ?? 10;
     const timezone = params.timezone || user.timezone || "Asia/Kolkata";
-    const voicePersona = params.voicePersona || user.preferredVoice || "Elena";
+    const voicePersona = resolveVoice(params.voicePersona || user.preferredVoice);
 
     const reminder = await ReminderRepository.create({
       userId: user.id,
@@ -67,6 +86,12 @@ export class ReminderService {
       maxAttempts,
       retryIntervalMinutes,
     });
+
+    // The free plan's one test call is used up by creating it, even if the reminder is later deleted
+    if (!isPaidPlan(user.plan)) {
+      // Set, not { increment }: on MongoDB increment is a no-op while the field is missing (older users)
+      await prisma.user.update({ where: { id: user.id }, data: { freeRemindersUsed: (user.freeRemindersUsed || 0) + 1 } });
+    }
 
     // Schedule BullMQ job for when reminder is due
     await SchedulerService.startNewCycle(reminder.id, scheduledDate);

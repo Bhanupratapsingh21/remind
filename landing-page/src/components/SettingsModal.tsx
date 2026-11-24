@@ -5,13 +5,10 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAppDispatch } from "@/store";
 import { updateUser } from "@/store/slices/authSlice";
+import { VoicePicker } from "@/components/VoicePicker";
+import { TonePicker } from "@/components/TonePicker";
+import { DEFAULT_TONE, findVoice } from "@/lib/voices";
 
-const VOICES = [
-  { id: "Elena", label: "Elena · Friendly & warm" },
-  { id: "Marcus", label: "Marcus · Direct & assertive" },
-  { id: "Sofia", label: "Sofia · Calm & mindful" },
-  { id: "James", label: "James · Professional" },
-];
 
 const labelCls = "block text-xs font-mono uppercase tracking-wider text-neutral-500 mb-1.5";
 const inputCls =
@@ -23,6 +20,7 @@ interface SettingsForm {
   callingStartTime: string;
   callingEndTime: string;
   preferredVoice: string;
+  callTone: string;
   defaultMaxAttempts: number;
   defaultRetryInterval: number;
 }
@@ -53,7 +51,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           timezone: u.timezone || "Asia/Kolkata",
           callingStartTime: u.callingStartTime || "08:00",
           callingEndTime: u.callingEndTime || "22:00",
-          preferredVoice: u.preferredVoice || "Elena",
+          preferredVoice: findVoice(u.preferredVoice).id,
+          callTone: u.callTone || DEFAULT_TONE,
           defaultMaxAttempts: u.defaultMaxAttempts || 3,
           defaultRetryInterval: u.defaultRetryInterval || 10,
         });
@@ -80,6 +79,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
         callingStartTime: form.callingStartTime,
         callingEndTime: form.callingEndTime,
         preferredVoice: form.preferredVoice,
+        callTone: form.callTone,
         defaultMaxAttempts: Number(form.defaultMaxAttempts),
         defaultRetryInterval: Number(form.defaultRetryInterval),
         ...(phone && phone !== initialPhone ? { phone } : {}),
@@ -88,7 +88,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       // Re-read so the stored, normalised phone number is what the dashboard shows
       const res = await api.get("/users/settings");
       const u = res.data?.data?.user || {};
-      dispatch(updateUser({ phone: u.phone, timezone: u.timezone, preferredVoice: u.preferredVoice }));
+      dispatch(updateUser({ phone: u.phone, timezone: u.timezone, preferredVoice: u.preferredVoice, callTone: u.callTone || DEFAULT_TONE }));
       toast.success("Settings saved.");
       onClose();
     } catch (err) {
@@ -190,21 +190,15 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </p>
 
             <div>
-              <label className={labelCls} htmlFor="settings-voice">
-                Voice
-              </label>
-              <select
-                id="settings-voice"
-                value={form.preferredVoice}
-                onChange={(e) => set("preferredVoice", e.target.value)}
-                className={inputCls}
-              >
-                {VOICES.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
+              <p className={labelCls}>
+                Voice <span className="normal-case tracking-normal text-neutral-400">· tap play to hear it</span>
+              </p>
+              <VoicePicker value={form.preferredVoice} onChange={(id) => set("preferredVoice", id)} />
+            </div>
+
+            <div>
+              <p className={labelCls}>Call style</p>
+              <TonePicker value={form.callTone} onChange={(id) => set("callTone", id)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { VoicePicker } from "@/components/VoicePicker";
+import { TonePicker } from "@/components/TonePicker";
+import { DEFAULT_TONE, DEFAULT_VOICE } from "@/lib/voices";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { updateUser, setOnboarded } from "@/store/slices/authSlice";
@@ -14,7 +17,6 @@ import {
   ArrowRight,
   Loader2,
   Check,
-  Volume2,
   ShieldCheck,
 } from "lucide-react";
 
@@ -26,33 +28,6 @@ const REFERRAL_OPTIONS = [
   { id: "Google", label: "Google Search" },
   { id: "ChatGPT / AI", label: "ChatGPT or AI Tools" },
   { id: "Other", label: "Other / Word of Mouth" },
-];
-
-const VOICE_PERSONAS = [
-  {
-    id: "Elena",
-    name: "Elena",
-    tone: "Friendly & Warm",
-    desc: "Gentle encouragement that keeps you motivated throughout the day.",
-  },
-  {
-    id: "Marcus",
-    name: "Marcus",
-    tone: "Direct & Assertive",
-    desc: "No excuses. Clear, no-nonsense accountability when tasks must get done.",
-  },
-  {
-    id: "Sofia",
-    name: "Sofia",
-    tone: "Calm & Mindful",
-    desc: "Soothing tone tailored for meditation, water breaks, and focused flow.",
-  },
-  {
-    id: "James",
-    name: "James",
-    tone: "Professional Executive",
-    desc: "Brief, crisp, and structured for meetings and work deadlines.",
-  },
 ];
 
 export default function OnboardingPage() {
@@ -73,7 +48,8 @@ export default function OnboardingPage() {
   const [referralSource, setReferralSource] = useState("");
   const [countryCode, setCountryCode] = useState("+91");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [preferredVoice, setPreferredVoice] = useState("Elena");
+  const [preferredVoice, setPreferredVoice] = useState(DEFAULT_VOICE);
+  const [callTone, setCallTone] = useState<string>(DEFAULT_TONE);
   const [timezone, setTimezone] = useState("UTC");
   const [submitting, setSubmitting] = useState(false);
 
@@ -104,6 +80,7 @@ export default function OnboardingPage() {
         phone: fullPhone,
         timezone,
         preferredVoice,
+        callTone,
       });
 
       const updated = res.data.data.user;
@@ -262,40 +239,18 @@ export default function OnboardingPage() {
         <form onSubmit={handleFinishOnboarding} className="space-y-5">
           <div>
             <h3 className="font-display text-2xl tracking-[-0.02em] text-neutral-900">
-              Pick your AI caller persona
+              Pick the voice that calls you
             </h3>
             <p className="text-xs text-neutral-500 mt-0.5">
-              You can change this voice anytime in your dashboard settings.
+              Tap play to hear each voice. You can change it anytime in Settings.
             </p>
           </div>
 
-          <div className="space-y-2">
-            {VOICE_PERSONAS.map((voice) => (
-              <button
-                key={voice.id}
-                type="button"
-                onClick={() => setPreferredVoice(voice.id)}
-                className={`w-full p-3.5 rounded-2xl border text-left flex items-start justify-between text-xs sm:text-sm transition-all cursor-pointer ${
-                  preferredVoice === voice.id
-                    ? "border-zinc-950 bg-amber-50/50 font-medium text-neutral-900 shadow-xs"
-                    : "border-neutral-200 hover:border-neutral-300 text-neutral-700 bg-white"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Volume2 className="h-3.5 w-3.5 text-neutral-500" />
-                    <span className="font-semibold text-neutral-900">{voice.name}</span>
-                    <span className="text-[11px] font-mono text-neutral-500 bg-neutral-200/60 px-2 py-0.5 rounded-full">
-                      {voice.tone}
-                    </span>
-                  </div>
-                  <p className="text-xs text-neutral-500 mt-1 font-normal">{voice.desc}</p>
-                </div>
-                {preferredVoice === voice.id && (
-                  <Check className="h-4 w-4 text-[#151515] shrink-0 mt-1" />
-                )}
-              </button>
-            ))}
+          <VoicePicker value={preferredVoice} onChange={setPreferredVoice} />
+
+          <div>
+            <p className="mb-2 text-sm font-medium text-neutral-900">How should it talk to you?</p>
+            <TonePicker value={callTone} onChange={setCallTone} />
           </div>
 
           {/* Timezone display */}
@@ -311,11 +266,11 @@ export default function OnboardingPage() {
           <div className="p-4 bg-zinc-950 text-white rounded-2xl text-xs space-y-1">
             <div className="flex items-center gap-1.5 font-medium">
               <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-              <span>Your free plan</span>
+              <span>Your free test call</span>
             </div>
             <p className="text-neutral-300 text-[11px]">
-              Up to 2 active AI voice call reminders at a time. Complete or cancel one to add
-              another.
+              Create one reminder and get a real call to try it. After that, Basic (₹199/month, 3
+              reminders) or Pro (₹499/month, unlimited).
             </p>
           </div>
 

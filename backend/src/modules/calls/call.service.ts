@@ -153,6 +153,7 @@ export class CallService {
         attemptNumber,
         timezone: reminder.timezone || reminder.user.timezone || "Asia/Kolkata",
         voicePersona: reminder.voicePersona || reminder.user.preferredVoice,
+        tone: reminder.user.callTone,
       });
 
       // Update attempt with Vapi call ID

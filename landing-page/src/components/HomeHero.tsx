@@ -13,29 +13,12 @@ import { AgentMascot } from "@/components/AgentMascot";
 import { SiteNav } from "@/components/site/SiteNav";
 
 
-/* Warm sky that matches the agent's amber glow */
+/* Light, clean sky (no dark band at the top) that warms toward the agent's amber glow */
 const SKY = {
-  skyTopColor: "#3f5f99",
+  skyTopColor: "#9cc0e6",
   skyBottomColor: "#f4d4b8",
   cloudColor: "#fff1e4",
 };
-
-function AnimatedHeadline() {
-  const words = ["Remind.", "Ring.", "Done."];
-  return (
-    <h1 className="flex flex-wrap justify-center gap-x-[0.28em] font-display text-[clamp(3rem,7.4vw,5.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950">
-      {words.map((w, i) => (
-        <span
-          key={w}
-          className="animate-[rise_.7s_cubic-bezier(.22,1,.36,1)_both]"
-          style={{ animationDelay: `${0.15 + i * 0.22}s` }}
-        >
-          {w}
-        </span>
-      ))}
-    </h1>
-  );
-}
 
 /* Product shot: dark-bezel screen showing a live call with the agent */
 function DeviceMock() {
@@ -123,7 +106,7 @@ export function HomeHero() {
     <div id="hero">
       <SiteNav />
       <section className="px-3 sm:px-4">
-        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#3f5f99,#f4d4b8)]">
+        <div className="relative mx-auto max-w-[1888px] overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,#9cc0e6,#f4d4b8)]">
           {/* WebGL sky; the gradient above shows if WebGL is unavailable */}
           <div className="absolute inset-0">
             <CloudShader {...SKY} speed={0.8} count={6} />
@@ -135,13 +118,15 @@ export function HomeHero() {
               <AgentMascot size={130} />
             </div>
 
-            <div className="mt-6">
-              <AnimatedHeadline />
-            </div>
+            <h1 className="mx-auto mt-6 max-w-[860px] animate-[rise_.7s_cubic-bezier(.22,1,.36,1)_both] font-display text-[clamp(2.4rem,6vw,4.6rem)] font-normal leading-[1.05] tracking-[-0.035em] text-zinc-950 [text-shadow:0_1px_24px_rgba(255,248,238,.55)]">
+              A reminder you can&apos;t simply swipe away.
+            </h1>
 
-            <p className="mx-auto mt-6 max-w-[600px] font-serif text-[18px] leading-[1.6] text-zinc-800 sm:text-[20px]">
-              A reminder you can&apos;t simply swipe away. Your AI agent calls, listens, and marks it done or calls back
-              later, all by voice.
+            <p
+              className="mx-auto mt-5 max-w-[580px] animate-[rise_.7s_cubic-bezier(.22,1,.36,1)_both] font-serif text-[18px] leading-[1.6] text-zinc-800 [animation-delay:.2s] sm:text-[20px]"
+            >
+              Your AI agent phones you at the time you set, listens, and marks it done or calls back later, all by
+              voice.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">

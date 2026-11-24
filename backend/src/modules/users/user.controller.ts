@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import prisma from "../../config/db";
 import { z } from "zod";
 import { toE164 } from "../../utils/phone.utils";
+import { TONES, resolveVoice } from "../vapi/voices";
 
 const updateSettingsSchema = z.object({
   timezone: z.string().optional(),
@@ -12,6 +13,7 @@ const updateSettingsSchema = z.object({
   defaultRetryInterval: z.number().int().min(1).max(120).optional(),
   phone: z.string().min(8).optional(),
   preferredVoice: z.string().optional(),
+  callTone: z.enum(TONES).optional(),
 });
 
 export class UserController {
@@ -43,6 +45,7 @@ export class UserController {
           defaultMaxAttempts: true,
           defaultRetryInterval: true,
           preferredVoice: true,
+          callTone: true,
           plan: true,
           maxReminders: true,
         },
@@ -98,6 +101,7 @@ export class UserController {
         defaultRetryInterval,
         phone,
         preferredVoice,
+        callTone,
       } = parsed.data;
 
       // Update User table
@@ -129,7 +133,8 @@ export class UserController {
         userUpdate.phone = normalizedPhone;
         userUpdate.isPhoneVerified = false;
       }
-      if (preferredVoice) userUpdate.preferredVoice = preferredVoice;
+      if (preferredVoice) userUpdate.preferredVoice = resolveVoice(preferredVoice);
+      if (callTone) userUpdate.callTone = callTone;
 
       await prisma.user.update({
         where: { id: userId },

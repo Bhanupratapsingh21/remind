@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "../config/db";
+import { accountExtras } from "../utils/account.utils";
+import { resolveVoice, resolveTone } from "../modules/vapi/voices";
 import { OtpService, OtpRateLimitError, EmailSendError } from "../services/otp.service";
 import { TokenService } from "../services/token.service";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
@@ -60,6 +62,7 @@ const onboardSchema = z.object({
   phone: z.string().min(8, "A valid phone number is required"),
   timezone: z.string().optional(),
   preferredVoice: z.string().optional(),
+  callTone: z.string().optional(),
 });
 
 export class AuthController {
@@ -380,6 +383,7 @@ export class AuthController {
             trialEndsAt: user.trialEndsAt,
             maxReminders: user.maxReminders,
             preferredVoice: user.preferredVoice,
+            ...accountExtras(user),
             timezone: user.timezone,
             createdAt: user.createdAt,
           },
@@ -442,6 +446,7 @@ export class AuthController {
           trialEndsAt: user.trialEndsAt,
           maxReminders: user.maxReminders,
           preferredVoice: user.preferredVoice,
+          ...accountExtras(user),
           timezone: user.timezone,
           createdAt: user.createdAt,
         },
@@ -603,6 +608,7 @@ export class AuthController {
             trialEndsAt: result.user.trialEndsAt,
             maxReminders: result.user.maxReminders,
             preferredVoice: result.user.preferredVoice,
+            ...accountExtras(result.user),
             timezone: result.user.timezone,
           },
         },
@@ -648,7 +654,7 @@ export class AuthController {
       return;
     }
 
-    const { referralSource, timezone, preferredVoice } = parsed.data;
+    const { referralSource, timezone, preferredVoice, callTone } = parsed.data;
     const phone = toE164(parsed.data.phone);
     if (!phone) {
       res.status(400).json({
@@ -682,7 +688,8 @@ export class AuthController {
           referralSource,
           phone,
           timezone: timezone || req.user.timezone || "UTC",
-          preferredVoice: preferredVoice || req.user.preferredVoice || "Elena",
+          preferredVoice: resolveVoice(preferredVoice || req.user.preferredVoice),
+          ...(callTone ? { callTone: resolveTone(callTone) } : {}),
           isOnboarded: true,
         },
         select: {
@@ -700,6 +707,11 @@ export class AuthController {
           maxReminders: true,
           preferredVoice: true,
           timezone: true,
+          callTone: true,
+          freeRemindersUsed: true,
+          subscriptionStatus: true,
+          currentPeriodEnd: true,
+          cancelAtPeriodEnd: true,
         },
       });
 
@@ -707,7 +719,7 @@ export class AuthController {
         success: true,
         message: "Onboarding completed successfully!",
         data: {
-          user: updatedUser,
+          user: { ...updatedUser, ...accountExtras(updatedUser) },
         },
       });
     } catch (error) {
@@ -721,10 +733,32 @@ export class AuthController {
    * GET /api/auth/me
    */
   public static async getMe(req: AuthenticatedRequest, res: Response): Promise<void> {
+    // Read fresh so plan changes from payment webhooks show up immediately
+    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    if (!user) {
+      res.status(401).json({ success: false, message: "User session no longer exists" });
+      return;
+    }
     res.status(200).json({
       success: true,
       data: {
-        user: req.user,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          phone: user.phone,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          isOnboarded: user.isOnboarded,
+          plan: user.plan,
+          trialEndsAt: user.trialEndsAt,
+          maxReminders: user.maxReminders,
+          preferredVoice: user.preferredVoice,
+          timezone: user.timezone,
+          createdAt: user.createdAt,
+          ...accountExtras(user),
+        },
       },
     });
   }

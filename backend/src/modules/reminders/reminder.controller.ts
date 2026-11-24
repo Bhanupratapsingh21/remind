@@ -36,7 +36,11 @@ export class ReminderController {
         message: "Reminder scheduled successfully",
       });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(error?.code === "PLAN_LIMIT" ? 402 : 400).json({
+        success: false,
+        message: error.message,
+        ...(error?.code ? { code: error.code } : {}),
+      });
     }
   }
 

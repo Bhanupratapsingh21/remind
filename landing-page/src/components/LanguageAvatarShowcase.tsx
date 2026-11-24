@@ -1,90 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
-import { Volume2 } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
 import { Eyebrow } from "@/components/site/Eyebrow";
 import { Aurora } from "@/components/site/Aurora";
 import { Reveal } from "@/components/site/Reveal";
-
-interface VoiceStyleOption {
-  name: string;
-  code: string;
-  phrase: string;
-  description: string;
-}
-
-const VOICE_STYLES: VoiceStyleOption[] = [
-  {
-    name: "Professional",
-    code: "en-US",
-    phrase: "“Good morning Alex, your strategy review is scheduled for right now.”",
-    description: "Crisp, concise, and focused on business priorities",
-  },
-  {
-    name: "Friendly",
-    code: "en-US",
-    phrase: "“Hey there! Quick reminder to send that update before your afternoon meeting.”",
-    description: "Warm, encouraging, and supportive companion",
-  },
-  {
-    name: "Disciplined",
-    code: "en-US",
-    phrase: "“Workout time. No postponements today — let's get it done.”",
-    description: "Direct, motivating, and accountability-driven",
-  },
-  {
-    name: "Gentle",
-    code: "en-US",
-    phrase: "“Take a deep breath and take that 10-minute walk we planned.”",
-    description: "Calm, patient, and mindful check-in",
-  },
-  {
-    name: "Hindi / Hinglish",
-    code: "hi-IN",
-    phrase: "“नमस्ते! याद दिलाना था कि शाम 5 बजे डॉक्टर की अपॉइंटमेंट है।”",
-    description: "Natural regional phrasing and multilingual fluency",
-  },
-];
-
-interface PersonaOption {
-  id: number;
-  name: string;
-  role: string;
-  tone: string;
-}
-
-const PERSONAS: PersonaOption[] = [
-  { id: 1, name: "Elena", role: "Executive Assistant", tone: "Crisp & direct" },
-  { id: 2, name: "Vikram", role: "Accountability Coach", tone: "Disciplined" },
-  { id: 3, name: "Maya", role: "Mindful Companion", tone: "Calm & gentle" },
-  { id: 4, name: "Liam", role: "Daily Partner", tone: "Friendly" },
-  { id: 5, name: "Ananya", role: "Multilingual Voice", tone: "Natural Hinglish" },
-];
+import { TONES, VOICES, playSample, type ToneOption, type VoiceOption } from "@/lib/voices";
 
 export function LanguageAvatarShowcase() {
-  const [selectedStyle, setSelectedStyle] = useState<VoiceStyleOption>(VOICE_STYLES[0]);
-  const [selectedPersona, setSelectedPersona] = useState<number>(1);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voice, setVoice] = useState<VoiceOption>(VOICES[0]);
+  const [tone, setTone] = useState<ToneOption>(TONES[0]);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
 
-  const handleSpeak = (text: string, langCode: string) => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const cleanText = text.replace(/[“”"]/g, "");
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.lang = langCode;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
+  useEffect(() => () => stopRef.current?.(), []);
+
+  const toggle = (v: VoiceOption) => {
+    if (playingId === v.id) {
+      stopRef.current?.();
+      return;
     }
+    setPlayingId(v.id);
+    stopRef.current = playSample(v.sample, () => setPlayingId((cur) => (cur === v.id ? null : cur)));
   };
 
-  const handleStyleChange = (style: VoiceStyleOption) => {
-    setSelectedStyle(style);
-    handleSpeak(style.phrase, style.code);
+  const pickVoice = (v: VoiceOption) => {
+    setVoice(v);
+    toggle(v);
   };
+
+  const isPlaying = playingId === voice.id;
 
   return (
     <section id="voices" className="w-full scroll-mt-20 px-4">
@@ -92,81 +37,103 @@ export function LanguageAvatarShowcase() {
         <Aurora className="h-36 sm:h-44" />
         <Reveal className="mx-auto max-w-4xl px-4 pb-20 pt-4 sm:pb-28">
           <div className="flex justify-center">
-            <Eyebrow>Persona & voice</Eyebrow>
+            <Eyebrow>Voices & call style</Eyebrow>
           </div>
           <h2 className="font-display text-4xl leading-[1.08] tracking-[-0.03em] text-zinc-950 sm:text-5xl md:text-6xl">
             A voice you trust.
             <br />
             A tone that fits your day.
           </h2>
+          <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-zinc-600">
+            Tap a voice to hear it. These are real recordings of the exact voices that call you.
+          </p>
 
-          {/* Persona chips */}
-          <div className="mx-auto mt-12 flex max-w-2xl flex-wrap items-center justify-center gap-2">
-            {PERSONAS.map((persona) => {
-              const isSelected = selectedPersona === persona.id;
+          {/* Voices */}
+          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-2 sm:grid-cols-5">
+            {VOICES.map((v) => {
+              const selected = voice.id === v.id;
+              const playing = playingId === v.id;
               return (
                 <button
-                  key={persona.id}
+                  key={v.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedPersona(persona.id);
-                    handleSpeak(selectedStyle.phrase, selectedStyle.code);
-                  }}
-                  className={`flex cursor-pointer select-none items-center gap-1.5 rounded-full px-4 py-2 text-[13px] transition-all ${
-                    isSelected
-                      ? "bg-zinc-950 font-medium text-white shadow-[0_8px_20px_-8px_rgba(0,0,0,.5)]"
-                      : "bg-white/60 text-zinc-600 hover:bg-white hover:text-zinc-950"
+                  onClick={() => pickVoice(v)}
+                  aria-pressed={selected}
+                  aria-label={`${playing ? "Stop" : "Play"} ${v.name}'s voice`}
+                  className={`group flex cursor-pointer flex-col items-start gap-1 rounded-2xl px-4 py-3 text-left transition-all ${
+                    selected
+                      ? "bg-zinc-950 text-white shadow-[0_12px_28px_-12px_rgba(0,0,0,.55)]"
+                      : "bg-white/60 text-zinc-700 hover:bg-white"
                   }`}
                 >
-                  <span>{persona.name}</span>
-                  <span className={`text-[11px] ${isSelected ? "text-amber-200" : "text-zinc-400"}`}>· {persona.role}</span>
+                  <span className="flex w-full items-center justify-between">
+                    <span className="text-[15px] font-medium">{v.name}</span>
+                    <span
+                      className={`grid h-6 w-6 place-items-center rounded-full ${
+                        selected ? "bg-white/15 text-amber-200" : "bg-amber-50 text-amber-600"
+                      }`}
+                    >
+                      {playing ? <Pause className="h-3 w-3 fill-current" /> : <Play className="ml-0.5 h-3 w-3 fill-current" />}
+                    </span>
+                  </span>
+                  <span className={`text-[11px] ${selected ? "text-zinc-300" : "text-zinc-500"}`}>
+                    {v.accent} · {v.gender}
+                  </span>
                 </button>
               );
             })}
           </div>
 
-          {/* Spoken phrase card */}
+          {/* What a call sounds like in the chosen style */}
           <button
             type="button"
-            onClick={() => handleSpeak(selectedStyle.phrase, selectedStyle.code)}
+            onClick={() => toggle(voice)}
             className="group mx-auto mt-8 flex w-full max-w-2xl items-center gap-4 rounded-[24px] bg-white p-5 text-left shadow-[0_20px_50px_-30px_rgba(120,70,20,.45)] sm:p-6"
+            aria-label={`${isPlaying ? "Stop" : "Play"} ${voice.name}'s voice sample`}
           >
             <span
               className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl transition-colors ${
-                isSpeaking ? "bg-amber-400 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100"
+                isPlaying ? "bg-amber-400 text-white" : "bg-amber-50 text-amber-600 group-hover:bg-amber-100"
               }`}
             >
-              <Volume2 className={`h-5 w-5 ${isSpeaking ? "animate-pulse" : ""}`} />
+              {isPlaying ? <Pause className="h-5 w-5 fill-current" /> : <Play className="ml-0.5 h-5 w-5 fill-current" />}
             </span>
-            <span>
-              <span className="block font-serif text-lg leading-snug text-zinc-900 sm:text-xl">{selectedStyle.phrase}</span>
-              <span className="mt-1 block font-mono text-[11px] text-zinc-400">{selectedStyle.description}</span>
+            <span className="min-w-0">
+              <span className="block font-serif text-lg leading-snug text-zinc-900 sm:text-xl">“{tone.example}”</span>
+              <span className="mt-1.5 block font-mono text-[11px] text-zinc-400">
+                {voice.name} · {voice.vibe} · {tone.label} style
+              </span>
             </span>
           </button>
 
-          {/* Style tabs */}
-          <div className="mx-auto mt-8 flex w-fit max-w-full flex-wrap justify-center gap-1 rounded-2xl bg-white/60 p-1">
-            {VOICE_STYLES.map((style) => {
-              const isActive = selectedStyle.name === style.name;
+          {/* Call styles */}
+          <div
+            role="tablist"
+            aria-label="Call style"
+            className="mx-auto mt-8 flex w-fit max-w-full flex-wrap justify-center gap-1 rounded-2xl bg-white/60 p-1"
+          >
+            {TONES.map((t) => {
+              const active = tone.id === t.id;
               return (
                 <button
-                  key={style.name}
+                  key={t.id}
                   type="button"
-                  onClick={() => handleStyleChange(style)}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTone(t)}
                   className={`cursor-pointer rounded-xl px-3.5 py-2 text-[13px] transition-all ${
-                    isActive ? "bg-white font-medium text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
+                    active ? "bg-white font-medium text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-900"
                   }`}
                 >
-                  {style.name}
+                  {t.label}
                 </button>
               );
             })}
           </div>
+          <p className="mt-3 text-[13px] text-zinc-500">{tone.description}</p>
 
-          <p className="mt-10 text-[14px] text-zinc-600">
-            Multiple languages · 5 voice personas · Ultra-low latency responses
-          </p>
-          <p className="mt-1 text-[12px] text-zinc-400">All voice personalities are included with your account.</p>
+          <p className="mt-10 text-[14px] text-zinc-600">5 voices · 5 call styles · English, Hindi or a mix</p>
+          <p className="mt-1 text-[12px] text-zinc-400">Every voice and style is included on every plan. Change them anytime in Settings.</p>
         </Reveal>
       </div>
     </section>
