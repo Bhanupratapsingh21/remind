@@ -35,6 +35,17 @@ const VOICE_PERSONAS: Record<string, { provider: string; voiceId: string }> = {
 };
 const DEFAULT_PERSONA = "Elena";
 
+/**
+ * Hang-up safety net. The model is told to say "Goodbye!" and call endCall; if it forgets to call endCall,
+ * the phrase alone hangs up. Silence and a hard duration cap stop a forgotten line from billing for long.
+ */
+const CALL_LIMITS = {
+  endCallFunctionEnabled: true,
+  endCallPhrases: ["goodbye"],
+  silenceTimeoutSeconds: 20,
+  maxDurationSeconds: 240,
+};
+
 const vapiHttp = () =>
   axios.create({
     baseURL: ENV.VAPI_BASE_URL,
@@ -99,6 +110,12 @@ INSTRUCTIONS:
    - If they want to create a new reminder (e.g. "Remind me to call Rahul tomorrow"): Call the "create_reminder" tool.
 3. Be concise, polite, accountability-driven, and natural. Keep responses brief since this is a phone call.
 4. After the matching tool succeeds, confirm briefly and end the call.
+
+ENDING THE CALL (calls are billed per minute, so never leave the line open):
+- When the reminder is handled, or the user says bye, thanks, okay, or otherwise wraps up, say one short closing line
+  that ends with the exact word "Goodbye!" and then immediately call the "endCall" function.
+- Never wait for the user to hang up. Never keep talking after "Goodbye!".
+- Only say the word "Goodbye" when you are ending the call.
 `.trim();
   }
 
@@ -235,6 +252,7 @@ INSTRUCTIONS:
           localTime: `${local.dateStr} ${local.timeStr}`,
         },
         voice: this.getVoiceConfig(params.voicePersona),
+        ...CALL_LIMITS,
         server,
         metadata,
       };
@@ -255,7 +273,7 @@ INSTRUCTIONS:
         },
         voice: this.getVoiceConfig(params.voicePersona),
         firstMessage: `Hey ${params.userName}, this is your reminder for: ${params.title}. Are you taking care of it now?`,
-        endCallFunctionEnabled: true,
+        ...CALL_LIMITS,
         server,
         metadata,
       };
