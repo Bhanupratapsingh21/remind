@@ -10,6 +10,10 @@ export class EmailService {
         host: ENV.SMTP_HOST,
         port: ENV.SMTP_PORT,
         secure: ENV.SMTP_PORT === 465, // true for 465, false for other ports like 587
+        // Fail fast: a blocked SMTP port otherwise hangs for minutes and the login request times out
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 15_000,
         auth: {
           user: ENV.SMTP_USER,
           pass: ENV.SMTP_PASS,

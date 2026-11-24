@@ -12,6 +12,13 @@ export class OtpRateLimitError extends Error {
   }
 }
 
+export class EmailSendError extends Error {
+  constructor() {
+    super("We couldn't email your code right now. Please try again in a minute.");
+    this.name = "EmailSendError";
+  }
+}
+
 export class OtpService {
   /**
    * Generates a 6-digit numeric OTP code.
@@ -40,17 +47,15 @@ export class OtpService {
       },
     });
 
-    // Development / Console log simulation for testing
-    console.log(`\n========================================`);
-    console.log(`🔔 [OTP DISPATCH] Type: ${type}`);
-    console.log(`📱 Recipient: ${identifier}`);
-    console.log(`🔑 Verification Code: ${code}`);
-    console.log(`⏰ Valid for: 5 minutes (until ${expiresAt.toLocaleTimeString()})`);
-    console.log(`========================================\n`);
+    // Print the code only in development; production logs must not hold login codes
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`\n🔔 [OTP DISPATCH] ${type} to ${identifier}: ${code} (valid until ${expiresAt.toLocaleTimeString()})\n`);
+    }
 
     // Dispatch email via Brevo SMTP if type is EMAIL
     if (type === "EMAIL") {
-      await EmailService.sendOtpEmail(identifier, code);
+      const sent = await EmailService.sendOtpEmail(identifier, code);
+      if (!sent) throw new EmailSendError();
     }
 
     return code;

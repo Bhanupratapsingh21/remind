@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import prisma from "../config/db";
-import { OtpService, OtpRateLimitError } from "../services/otp.service";
+import { OtpService, OtpRateLimitError, EmailSendError } from "../services/otp.service";
 import { TokenService } from "../services/token.service";
 import { AuthenticatedRequest } from "../middlewares/auth.middleware";
 import { toE164 } from "../utils/phone.utils";
@@ -86,6 +86,10 @@ export class AuthController {
     } catch (error) {
       if (error instanceof OtpRateLimitError) {
         res.status(429).json({ success: false, message: error.message, retryAfterMinutes: error.retryAfterMinutes });
+        return;
+      }
+      if (error instanceof EmailSendError) {
+        res.status(502).json({ success: false, message: error.message });
         return;
       }
       console.error("Error sending OTP:", error);
@@ -478,6 +482,10 @@ export class AuthController {
     } catch (error) {
       if (error instanceof OtpRateLimitError) {
         res.status(429).json({ success: false, message: error.message, retryAfterMinutes: error.retryAfterMinutes });
+        return;
+      }
+      if (error instanceof EmailSendError) {
+        res.status(502).json({ success: false, message: error.message });
         return;
       }
       console.error("Error sending login OTP:", error);
