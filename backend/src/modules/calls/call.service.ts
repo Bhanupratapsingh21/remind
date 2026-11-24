@@ -71,7 +71,8 @@ export class CallService {
       return null;
     }
 
-    const recipientPhone = reminder.user.phone;
+    // Vapi needs E.164 with no spaces; older accounts saved numbers like "+91 98765 43210"
+    const recipientPhone = reminder.user.phone?.replace(/[^\d+]/g, "") || null;
     if (!recipientPhone) {
       console.error(`[CallService] User ${reminder.userId} has no registered phone number.`);
       await prisma.reminder.update({
