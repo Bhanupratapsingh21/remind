@@ -9,6 +9,19 @@ export class PlanLimitError extends Error {
   public readonly code = "PLAN_LIMIT";
 }
 
+/**
+ * Give the free test call back when a free user cancels or deletes a reminder that never placed a call,
+ * so a wrong time or a typo doesn't burn their only test. A reminder already CANCELLED was refunded then.
+ */
+async function refundFreeTestIfUnused(reminderId: string, userId: string, previousStatus: string) {
+  if (previousStatus === "CANCELLED") return;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, freeRemindersUsed: true } });
+  if (!user || isPaidPlan(user.plan) || !user.freeRemindersUsed) return;
+  const calls = await prisma.reminderAttempt.count({ where: { reminderId, vapiCallId: { not: null } } });
+  if (calls > 0) return;
+  await prisma.user.update({ where: { id: userId }, data: { freeRemindersUsed: Math.max(0, user.freeRemindersUsed - 1) } });
+}
+
 async function assertPlanAllows(user: { id: string; plan: string; freeRemindersUsed: number | null }) {
   if (user.plan === "PRO") return;
 
@@ -269,6 +282,7 @@ export class ReminderService {
     }
 
     await SchedulerService.cancelPendingJobs(id);
+    await refundFreeTestIfUnused(id, userId, reminder.status);
 
     await ReminderRepository.update(id, userId, {
       status: "CANCELLED",
@@ -287,6 +301,8 @@ export class ReminderService {
     }
 
     await SchedulerService.cancelPendingJobs(id);
+    // Before deleting: the attempt rows it checks go with the reminder
+    await refundFreeTestIfUnused(id, userId, reminder.status);
     await ReminderRepository.delete(id, userId);
     return { success: true };
   }
