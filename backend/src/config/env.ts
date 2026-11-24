@@ -41,7 +41,8 @@ export const ENV = {
   VOBIZ_AUTH_TOKEN: process.env.VOBIZ_AUTH_TOKEN || "",
 
   // App & Webhooks
-  WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL || "http://localhost:5000",
+  // Render sets RENDER_EXTERNAL_URL to the service's public https URL
+  WEBHOOK_BASE_URL: process.env.WEBHOOK_BASE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:5000",
   APP_TIMEZONE: process.env.APP_TIMEZONE || "Asia/Kolkata",
 
   // Abuse / cost guard: outbound calls placed per user per rolling 24 hours

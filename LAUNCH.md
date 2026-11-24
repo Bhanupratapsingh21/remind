@@ -1,5 +1,7 @@
 # Launch checklist
 
+Step-by-step setup for Vapi, Vobiz, Upstash and Render is in [SETUP.md](SETUP.md).
+
 Audit date: 2026-11-23. Both apps build and typecheck cleanly. The code for scheduling, calling, retries, webhooks and auth is complete. What stops the app from working is configuration and hosting, listed below in order.
 
 ## 1. Blockers you must fix (nothing works without these)

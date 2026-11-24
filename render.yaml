@@ -1,0 +1,60 @@
+# Render Blueprint for the Remind backend (API + BullMQ worker in one process).
+# Render dashboard > New > Blueprint > pick this repo. Fill the "sync: false" values when asked.
+services:
+  - type: web
+    name: remind-backend
+    runtime: node
+    region: singapore # closest Render region to India
+    plan: starter # not "free": free instances sleep, and a sleeping worker never places calls
+    buildCommand: npm ci --include=dev && npm run build:backend
+    startCommand: npm --workspace=backend run start
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata
+      - key: VAPI_MOCK_CALLS
+        value: "false"
+      - key: VAPI_BASE_URL
+        value: https://api.vapi.ai
+      - key: MAX_CALLS_PER_USER_PER_DAY
+        value: "20"
+      - key: VAPI_WEBHOOK_SECRET
+        generateValue: true
+      # Values you paste in the Render dashboard
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: CLIENT_URL
+        sync: false
+      - key: VAPI_API_KEY
+        sync: false
+      - key: VAPI_PHONE_NUMBER_ID
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      # Optional: leave unset to use Render's own URL (RENDER_EXTERNAL_URL) for Vapi webhooks.
+      # Set it once you put the API on a custom domain such as https://api.yourdomain.com
+      - key: WEBHOOK_BASE_URL
+        sync: false
