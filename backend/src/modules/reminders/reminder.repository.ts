@@ -3,7 +3,7 @@ import prisma from "../../config/db";
 export class ReminderRepository {
   public static async findById(id: string, userId: string) {
     return prisma.reminder.findFirst({
-      where: { id, userId },
+      where: { id, userId, deletedAt: { isSet: false } },
       include: {
         attempts: {
           orderBy: { attemptNumber: "asc" },
@@ -20,7 +20,7 @@ export class ReminderRepository {
   }) {
     const { userId, status, fromDate, toDate } = params;
 
-    const whereClause: any = { userId };
+    const whereClause: any = { userId, deletedAt: { isSet: false } };
 
     if (status) {
       whereClause.status = status;
@@ -63,6 +63,9 @@ export class ReminderRepository {
     voicePersona?: string;
     maxAttempts: number;
     retryIntervalMinutes: number;
+    repeat?: string;
+    repeatTime?: string;
+    repeatWeekday?: number | null;
   }) {
     return prisma.reminder.create({
       data: {

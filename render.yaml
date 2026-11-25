@@ -56,6 +56,8 @@ services:
         sync: false
       - key: BREVO_API_KEY
         sync: false
+      - key: ADMIN_ALERT_EMAIL
+        sync: false
       # Dodo Payments (optional until you sell plans)
       - key: DODO_PAYMENTS_API_KEY
         sync: false

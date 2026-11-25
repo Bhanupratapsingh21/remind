@@ -1,3 +1,7 @@
+/** 402 opens the plan picker; input problems are 400; "not found" is 404 */
+const statusFor = (error: any, fallback = 400) =>
+  error?.code === "PLAN_LIMIT" ? 402 : error?.code === "INVALID_INPUT" ? 400 : /not found/i.test(error?.message || "") ? 404 : fallback;
+
 import { Response } from "express";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import { ReminderService } from "./reminder.service";
@@ -28,6 +32,7 @@ export class ReminderController {
       const reminder = await ReminderService.createReminder({
         userId,
         ...parsed.data,
+        enforceLeadTime: true,
       });
 
       res.status(201).json({
@@ -36,7 +41,7 @@ export class ReminderController {
         message: "Reminder scheduled successfully",
       });
     } catch (error: any) {
-      res.status(error?.code === "PLAN_LIMIT" ? 402 : 400).json({
+      res.status(statusFor(error)).json({
         success: false,
         message: error.message,
         ...(error?.code ? { code: error.code } : {}),
@@ -63,7 +68,7 @@ export class ReminderController {
         data: reminders,
       });
     } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(statusFor(error, 500)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -81,7 +86,7 @@ export class ReminderController {
       const reminders = await ReminderService.getUpcoming(userId);
       res.status(200).json({ success: true, data: reminders });
     } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(statusFor(error, 500)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -99,7 +104,7 @@ export class ReminderController {
       const reminders = await ReminderService.getCompleted(userId);
       res.status(200).json({ success: true, data: reminders });
     } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(statusFor(error, 500)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -117,7 +122,7 @@ export class ReminderController {
       const reminders = await ReminderService.getMissed(userId);
       res.status(200).json({ success: true, data: reminders });
     } catch (error: any) {
-      res.status(500).json({ success: false, message: error.message });
+      res.status(statusFor(error, 500)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -159,7 +164,7 @@ export class ReminderController {
       const updated = await ReminderService.updateReminder(req.params.id, userId, parsed.data);
       res.status(200).json({ success: true, data: updated });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(statusFor(error, 400)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -177,7 +182,7 @@ export class ReminderController {
       const updated = await ReminderService.completeReminder(req.params.id, userId);
       res.status(200).json({ success: true, data: updated });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(statusFor(error, 400)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -201,7 +206,7 @@ export class ReminderController {
       const updated = await ReminderService.snoozeReminder(req.params.id, userId, parsed.data);
       res.status(200).json({ success: true, data: updated });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(statusFor(error, 400)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -219,7 +224,7 @@ export class ReminderController {
       const updated = await ReminderService.cancelReminder(req.params.id, userId);
       res.status(200).json({ success: true, data: updated });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(statusFor(error, 400)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 
@@ -237,7 +242,7 @@ export class ReminderController {
       await ReminderService.deleteReminder(req.params.id, userId);
       res.status(200).json({ success: true, message: "Reminder deleted" });
     } catch (error: any) {
-      res.status(400).json({ success: false, message: error.message });
+      res.status(statusFor(error, 400)).json({ success: false, message: error.message, ...(error?.code ? { code: error.code } : {}) });
     }
   }
 }

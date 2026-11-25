@@ -107,6 +107,12 @@ model Reminder {
   completedAt          DateTime?
   voicePersona         String?           @default("Elena")
   retryCount           Int               @default(0)
+  // Repeat (Pro): DAILY | WEEKDAYS | WEEKLY. repeatTime is the local "HH:mm", repeatWeekday 0=Sun..6 (WEEKLY)
+  repeat               String?
+  repeatTime           String?
+  repeatWeekday        Int?
+  // Soft delete: hidden from the dashboard, but call history and the daily-call cap keep counting it
+  deletedAt            DateTime?
   attempts             ReminderAttempt[]
   callLogs             CallLog[]
   createdAt            DateTime          @default(now())

@@ -3,6 +3,40 @@ import { ReminderRepository } from "./reminder.repository";
 import { SchedulerService } from "../../queues/reminder.queue";
 import { resolveVoice } from "../vapi/voices";
 import { PLAN_LIMITS, FREE_TEST_REMINDERS, isPaidPlan } from "../billing/plans";
+import { isRepeatRule, nextOccurrence, repeatFieldsFor, type RepeatRule } from "../../utils/repeat.utils";
+import { CONNECTED_CALL } from "../calls/call.constants";
+
+/** A reminder set from the dashboard must be at least this far ahead (people pick "now" and expect a call) */
+export const MIN_LEAD_MINUTES = 2;
+const MIN_LEAD_MS = MIN_LEAD_MINUTES * 60_000 - 15_000; // 15s grace for form-filling and network time
+const MAX_AHEAD_MS = 366 * 24 * 3600_000;
+
+/** Statuses a reminder can be edited from (not while a call is live, not once finished) */
+const EDITABLE_STATUSES = ["SCHEDULED", "SNOOZED", "MISSED", "FAILED", "ACKNOWLEDGED"];
+const ACTIVE_STATUSES = ["SCHEDULED", "CALLING", "SNOOZED"];
+
+/** A user-facing input problem (wrong time, can't edit now); answered with 400 */
+export class ReminderInputError extends Error {
+  public readonly code = "INVALID_INPUT";
+}
+
+function assertLeadTime(date: Date) {
+  if (isNaN(date.getTime())) throw new ReminderInputError("Please pick a valid date and time.");
+  if (date.getTime() < Date.now() + MIN_LEAD_MS) {
+    throw new ReminderInputError(
+      `That time is too soon or has already passed. Pick a time at least ${MIN_LEAD_MINUTES} minutes from now.`
+    );
+  }
+  if (date.getTime() > Date.now() + MAX_AHEAD_MS) {
+    throw new ReminderInputError("Pick a time within the next year.");
+  }
+}
+
+function assertRepeatAllowed(plan: string, repeat: string | undefined | null) {
+  if (repeat && repeat !== "NONE" && plan !== "PRO") {
+    throw new PlanLimitError("Repeating reminders are part of Pro. Upgrade to set daily or weekly calls.");
+  }
+}
 
 /** Thrown when the user's plan doesn't allow another reminder; the frontend opens the plan picker */
 export class PlanLimitError extends Error {
@@ -17,7 +51,8 @@ async function refundFreeTestIfUnused(reminderId: string, userId: string, previo
   if (previousStatus === "CANCELLED") return;
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true, freeRemindersUsed: true } });
   if (!user || isPaidPlan(user.plan) || !user.freeRemindersUsed) return;
-  const calls = await prisma.reminderAttempt.count({ where: { reminderId, vapiCallId: { not: null } } });
+  // Only a call that actually connected uses up the test; a carrier failure or no answer does not
+  const calls = await prisma.reminderAttempt.count({ where: { reminderId, ...CONNECTED_CALL } });
   if (calls > 0) return;
   await prisma.user.update({ where: { id: userId }, data: { freeRemindersUsed: Math.max(0, user.freeRemindersUsed - 1) } });
 }
@@ -54,10 +89,13 @@ export class ReminderService {
     priority?: string;
     notificationChannel?: string;
     voicePersona?: string;
+    repeat?: string;
     retryPolicy?: {
       maxAttempts?: number;
       retryIntervalMinutes?: number;
     };
+    /** Dashboard requests: enforce the minimum lead time (voice-created reminders pick their own delay) */
+    enforceLeadTime?: boolean;
   }) {
     const user = await prisma.user.findUnique({
       where: { id: params.userId },
@@ -75,12 +113,14 @@ export class ReminderService {
       throw new Error("User not found");
     }
 
-    await assertPlanAllows(user);
-
     const scheduledDate = new Date(params.scheduledAt);
     if (isNaN(scheduledDate.getTime())) {
-      throw new Error("Invalid scheduled date format");
+      throw new ReminderInputError("Please pick a valid date and time.");
     }
+    if (params.enforceLeadTime) assertLeadTime(scheduledDate);
+    assertRepeatAllowed(user.plan, params.repeat);
+
+    await assertPlanAllows(user);
 
     const maxAttempts = params.retryPolicy?.maxAttempts ?? 3;
     const retryIntervalMinutes = params.retryPolicy?.retryIntervalMinutes ?? 10;
@@ -98,6 +138,7 @@ export class ReminderService {
       voicePersona,
       maxAttempts,
       retryIntervalMinutes,
+      ...(isRepeatRule(params.repeat) ? repeatFieldsFor(params.repeat, scheduledDate, timezone) : {}),
     });
 
     // The free plan's one test call is used up by creating it, even if the reminder is later deleted
@@ -155,6 +196,7 @@ export class ReminderService {
     return prisma.reminder.findMany({
       where: {
         userId,
+        deletedAt: { isSet: false },
         status: { in: ["SCHEDULED", "SNOOZED"] },
         scheduledAt: { gte: new Date() },
       },
@@ -170,6 +212,7 @@ export class ReminderService {
     return prisma.reminder.findMany({
       where: {
         userId,
+        deletedAt: { isSet: false },
         status: "COMPLETED",
       },
       orderBy: { completedAt: "desc" },
@@ -184,6 +227,7 @@ export class ReminderService {
     return prisma.reminder.findMany({
       where: {
         userId,
+        deletedAt: { isSet: false },
         status: "MISSED",
       },
       orderBy: { updatedAt: "desc" },
@@ -192,30 +236,97 @@ export class ReminderService {
   }
 
   /**
-   * Update reminder properties
+   * Edit a reminder. A new time restarts its call cycle; editing a missed or failed reminder with a new
+   * time brings it back as scheduled (subject to plan limits).
    */
-  public static async updateReminder(id: string, userId: string, data: any) {
+  public static async updateReminder(
+    id: string,
+    userId: string,
+    data: {
+      title?: string;
+      description?: string | null;
+      scheduledAt?: string | Date;
+      priority?: string;
+      voicePersona?: string;
+      maxAttempts?: number;
+      retryIntervalMinutes?: number;
+      repeat?: string;
+    }
+  ) {
     const reminder = await ReminderRepository.findById(id, userId);
     if (!reminder) {
       throw new Error("Reminder not found");
     }
-
-    const updatePayload: any = { ...data };
-    if (data.title) {
-      updatePayload.task = data.title;
+    if (!EDITABLE_STATUSES.includes(reminder.status)) {
+      throw new ReminderInputError(
+        reminder.status === "CALLING"
+          ? "This reminder is calling you right now. Edit it after the call."
+          : "Finished reminders can't be edited. Create a new one instead."
+      );
     }
 
-    if (data.scheduledAt) {
-      const newDate = new Date(data.scheduledAt);
-      updatePayload.scheduledAt = newDate;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, plan: true, freeRemindersUsed: true },
+    });
+    if (!user) throw new Error("User not found");
 
-      // Reschedule BullMQ job if date changed and reminder is pending
-      if (["SCHEDULED", "SNOOZED"].includes(reminder.status)) {
-        await SchedulerService.startNewCycle(id, newDate);
+    const update: Record<string, unknown> = {};
+    if (data.title !== undefined) {
+      update.title = data.title;
+      update.task = data.title;
+    }
+    if (data.description !== undefined) update.description = data.description || null;
+    if (data.priority) update.priority = data.priority;
+    if (data.voicePersona) update.voicePersona = resolveVoice(data.voicePersona);
+    if (data.maxAttempts) update.maxAttempts = data.maxAttempts;
+    if (data.retryIntervalMinutes) update.retryIntervalMinutes = data.retryIntervalMinutes;
+
+    let newDate: Date | null = null;
+    if (data.scheduledAt !== undefined) {
+      newDate = new Date(data.scheduledAt);
+      if (newDate.getTime() !== reminder.scheduledAt.getTime()) {
+        assertLeadTime(newDate);
+      } else {
+        newDate = null; // unchanged
       }
     }
 
-    await ReminderRepository.update(id, userId, updatePayload);
+    // Repeat: Pro only; "NONE" switches it off. A new time also moves the repeat time.
+    if (data.repeat !== undefined) {
+      if (data.repeat === "NONE") {
+        Object.assign(update, { repeat: null, repeatTime: null, repeatWeekday: null });
+      } else if (isRepeatRule(data.repeat)) {
+        assertRepeatAllowed(user.plan, data.repeat);
+        Object.assign(update, repeatFieldsFor(data.repeat, newDate || reminder.scheduledAt, reminder.timezone));
+      }
+    } else if (newDate && isRepeatRule(reminder.repeat)) {
+      Object.assign(update, repeatFieldsFor(reminder.repeat as RepeatRule, newDate, reminder.timezone));
+    }
+
+    const wasActive = ACTIVE_STATUSES.includes(reminder.status);
+    if (newDate) {
+      if (!wasActive) {
+        // Coming back from MISSED / FAILED / ACKNOWLEDGED takes an active slot again
+        if (!isPaidPlan(user.plan)) {
+          const connected = await prisma.reminderAttempt.count({ where: { reminderId: id, ...CONNECTED_CALL } });
+          if (connected > 0) {
+            throw new PlanLimitError("Rescheduling after your free test call is part of Basic and Pro.");
+          }
+        } else if (user.plan === "BASIC") {
+          const activeCount = await ReminderRepository.countActiveByUser(userId);
+          if (activeCount >= PLAN_LIMITS.BASIC) {
+            throw new PlanLimitError(
+              `Basic includes ${PLAN_LIMITS.BASIC} active reminders. Complete or delete one, or upgrade to Pro for unlimited.`
+            );
+          }
+        }
+      }
+      Object.assign(update, { scheduledAt: newDate, status: "SCHEDULED", retryCount: 0 });
+    }
+
+    await ReminderRepository.update(id, userId, update);
+    if (newDate) await SchedulerService.startNewCycle(id, newDate);
     return ReminderRepository.findById(id, userId);
   }
 
@@ -234,6 +345,7 @@ export class ReminderService {
       status: "COMPLETED",
       completedAt: new Date(),
     });
+    await ReminderService.rollRepeat(id);
 
     return ReminderRepository.findById(id, userId);
   }
@@ -301,9 +413,38 @@ export class ReminderService {
     }
 
     await SchedulerService.cancelPendingJobs(id);
-    // Before deleting: the attempt rows it checks go with the reminder
     await refundFreeTestIfUnused(id, userId, reminder.status);
-    await ReminderRepository.delete(id, userId);
+    // Soft delete: hidden everywhere, but its calls still count toward the daily cap and stay in the logs
+    await ReminderRepository.update(id, userId, { status: "CANCELLED", deletedAt: new Date() });
     return { success: true };
+  }
+
+  /**
+   * After an occurrence ends (done, missed, failed or talked through), move a repeating reminder to its
+   * next occurrence and schedule it. Repeats are a Pro feature: on any other plan the repeat switches off.
+   * Returns true when it rescheduled.
+   */
+  public static async rollRepeat(id: string): Promise<boolean> {
+    const reminder = await prisma.reminder.findUnique({ where: { id }, include: { user: { select: { plan: true } } } });
+    if (!reminder || !reminder.repeat || reminder.deletedAt || reminder.status === "CANCELLED") return false;
+
+    if (reminder.user.plan !== "PRO") {
+      await prisma.reminder.update({ where: { id }, data: { repeat: null, repeatTime: null, repeatWeekday: null } });
+      console.log(`🔁 [Repeat] Reminder ${id}: plan is no longer Pro, repeat switched off`);
+      return false;
+    }
+
+    // After the occurrence being closed, not just after now: "done" ahead of time must not re-ring today
+    const after = new Date(Math.max(Date.now(), reminder.scheduledAt.getTime()));
+    const next = nextOccurrence(reminder.repeat, reminder.repeatTime, reminder.repeatWeekday, reminder.timezone, after);
+    if (!next) return false;
+
+    await prisma.reminder.update({
+      where: { id },
+      data: { status: "SCHEDULED", scheduledAt: next, retryCount: 0 },
+    });
+    await SchedulerService.startNewCycle(id, next);
+    console.log(`🔁 [Repeat] Reminder "${reminder.title}" next occurrence ${next.toISOString()}`);
+    return true;
   }
 }

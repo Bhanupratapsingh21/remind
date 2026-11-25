@@ -24,6 +24,8 @@ export interface User {
   cancelAtPeriodEnd?: boolean;
   callingStartTime?: string;
   callingEndTime?: string;
+  defaultMaxAttempts?: number;
+  defaultRetryInterval?: number;
 }
 
 export interface AuthState {

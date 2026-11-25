@@ -2,6 +2,7 @@ import { Response } from "express";
 import { AuthenticatedRequest } from "../../middlewares/auth.middleware";
 import prisma from "../../config/db";
 import { isPaidPlan } from "../billing/plans";
+import { CONNECTED_CALL } from "./call.constants";
 import { CallService } from "./call.service";
 
 export class CallController {
@@ -59,7 +60,7 @@ export class CallController {
 
       // Free accounts get one test reminder; "call now" must not turn it into unlimited free calls
       if (!isPaidPlan(req.user?.plan)) {
-        const calls = await prisma.reminderAttempt.count({ where: { reminderId: id, vapiCallId: { not: null } } });
+        const calls = await prisma.reminderAttempt.count({ where: { reminderId: id, ...CONNECTED_CALL } });
         if (calls > 0) {
           res.status(402).json({
             success: false,
