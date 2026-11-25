@@ -24,6 +24,8 @@ export const ENV = {
   BREVO_API_KEY: process.env.BREVO_API_KEY || "",
   // Where to email operational alerts (e.g. the phone carrier refusing calls). Optional.
   ADMIN_ALERT_EMAIL: process.env.ADMIN_ALERT_EMAIL || "",
+  // Number shown to users as "we'll call you from". Defaults to the Vapi phone number (VAPI_PHONE_NUMBER_ID).
+  CALLER_ID_NUMBER: process.env.CALLER_ID_NUMBER || "",
 
   // Dodo Payments. Optional: without the API key the billing routes answer 503 and the app keeps running.
   DODO_PAYMENTS_API_KEY: process.env.DODO_PAYMENTS_API_KEY || "",

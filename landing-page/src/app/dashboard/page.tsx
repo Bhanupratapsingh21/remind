@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { AgentMascot } from "@/components/AgentMascot";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SettingsModal } from "@/components/SettingsModal";
+import { CallerIdCard } from "@/components/CallerIdCard";
 import { VoicePicker } from "@/components/VoicePicker";
 import { PlanPickerModal } from "@/components/billing/PlanPickerModal";
 import { findVoice } from "@/lib/voices";
@@ -507,6 +508,8 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      <CallerIdCard />
 
       {/* MAIN DASHBOARD CONTENT */}
       <main className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
