@@ -14,6 +14,7 @@ import { PlanPickerModal } from "@/components/billing/PlanPickerModal";
 import { findVoice } from "@/lib/voices";
 import { planLabel } from "@/lib/plans";
 import { describeCallTime, formatHours, heldUntil, type CallingHours } from "@/lib/callingHours";
+import { MIN_LEAD_MINUTES, REPEAT_OPTIONS, defaultSlot, describeRepeat, toLocalInputs, type RepeatRule } from "@/lib/reminderForm";
 import { updateUser } from "@/store/slices/authSlice";
 import {
   Settings,
@@ -29,6 +30,9 @@ import {
   Trash2,
   Calendar,
   Moon,
+  Pencil,
+  Repeat,
+  Lock,
   AlertCircle,
   PhoneForwarded,
 } from "lucide-react";
@@ -70,6 +74,8 @@ interface ReminderItem {
   maxAttempts: number;
   retryIntervalMinutes: number;
   voicePersona?: string;
+  repeat?: RepeatRule | null;
+  repeatWeekday?: number | null;
   completedAt?: string;
   attempts?: ReminderAttempt[];
   createdAt: string;
@@ -98,13 +104,24 @@ export default function DashboardPage() {
   // Create Reminder Form State
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [newTime, setNewTime] = useState("10:00");
+  // Local date/time (toISOString would give the UTC date, i.e. yesterday before 5:30 AM in India)
+  const [newDate, setNewDate] = useState(() => defaultSlot().date);
+  const [newTime, setNewTime] = useState(() => defaultSlot().time);
+  const [newRepeat, setNewRepeat] = useState<"NONE" | RepeatRule>("NONE");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Ticks so "too soon" re-evaluates while the form is open
+  const [now, setNow] = useState(() => Date.now());
   const [newPriority, setNewPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("HIGH");
   const [newPersona, setNewPersona] = useState(() => findVoice(user?.preferredVoice).id);
   const [newMaxAttempts, setNewMaxAttempts] = useState(3);
   const [newRetryInterval, setNewRetryInterval] = useState(10);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!showCreateModal) return;
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, [showCreateModal]);
 
   // Redirect unauthenticated or not-onboarded users
   useEffect(() => {
@@ -184,6 +201,8 @@ export default function DashboardPage() {
   // Calls due outside calling hours are held by the server until the window opens
   const plannedAt = new Date(`${newDate}T${newTime}:00`);
   const plannedHeldUntil = isNaN(plannedAt.getTime()) ? null : heldUntil(plannedAt, callingHours);
+  const plannedTooSoon = !isNaN(plannedAt.getTime()) && plannedAt.getTime() < now + MIN_LEAD_MINUTES * 60_000 - 15_000;
+  const isPro = user?.plan === "PRO";
   const freeTestUsed = (user?.freeRemindersUsed || 0) >= 1;
   const isAtQuota =
     user?.plan === "PRO"
@@ -213,8 +232,41 @@ export default function DashboardPage() {
       setShowUpgradeModal(true);
       return;
     }
+    const slot = defaultSlot();
+    setEditingId(null);
+    setNewTitle("");
+    setNewDescription("");
+    setNewDate(slot.date);
+    setNewTime(slot.time);
+    setNewPriority("HIGH");
+    setNewPersona(findVoice(user?.preferredVoice).id);
+    setNewMaxAttempts(user?.defaultMaxAttempts || 3);
+    setNewRetryInterval(user?.defaultRetryInterval || 10);
+    setNewRepeat("NONE");
+    setNow(Date.now());
     setShowCreateModal(true);
   };
+
+  const handleOpenEdit = (reminder: ReminderItem) => {
+    const local = toLocalInputs(new Date(reminder.scheduledAt));
+    setEditingId(reminder.id);
+    setNewTitle(reminder.title);
+    setNewDescription(reminder.description || "");
+    setNewDate(local.date);
+    setNewTime(local.time);
+    setNewPriority(reminder.priority);
+    setNewPersona(findVoice(reminder.voicePersona).id);
+    setNewMaxAttempts(reminder.maxAttempts);
+    setNewRetryInterval(reminder.retryIntervalMinutes);
+    setNewRepeat(reminder.repeat || "NONE");
+    setNow(Date.now());
+    setShowCreateModal(true);
+  };
+
+  const editingReminder = editingId ? reminders.find((r) => r.id === editingId) : undefined;
+  // When editing, an unchanged time may already be in the past (e.g. a missed reminder); only a new time must be ahead
+  const timeChanged = !editingReminder || new Date(editingReminder.scheduledAt).getTime() !== plannedAt.getTime();
+  const blockTooSoon = plannedTooSoon && timeChanged;
 
   const handleCreateReminder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,10 +274,34 @@ export default function DashboardPage() {
       toast.error("Please enter a task title.");
       return;
     }
+    if (blockTooSoon) {
+      toast.error(`Pick a time at least ${MIN_LEAD_MINUTES} minutes from now.`);
+      return;
+    }
 
     try {
       setIsSubmitting(true);
       const scheduledDateTime = new Date(`${newDate}T${newTime}:00`);
+
+      if (editingId) {
+        const res = await api.patch(`/reminders/${editingId}`, {
+          title: newTitle.trim(),
+          description: newDescription.trim() || null,
+          ...(timeChanged ? { scheduledAt: scheduledDateTime.toISOString() } : {}),
+          priority: newPriority,
+          voicePersona: newPersona,
+          maxAttempts: Number(newMaxAttempts),
+          retryIntervalMinutes: Number(newRetryInterval),
+          repeat: newRepeat,
+        });
+        if (res.data?.success) {
+          toast.success("Reminder updated.");
+          setShowCreateModal(false);
+          setEditingId(null);
+          await fetchReminders();
+        }
+        return;
+      }
 
       const payload = {
         title: newTitle.trim(),
@@ -234,6 +310,7 @@ export default function DashboardPage() {
         timezone: user?.timezone || "Asia/Kolkata",
         priority: newPriority,
         voicePersona: newPersona,
+        ...(newRepeat !== "NONE" ? { repeat: newRepeat } : {}),
         retryPolicy: {
           maxAttempts: Number(newMaxAttempts),
           retryIntervalMinutes: Number(newRetryInterval),
@@ -307,12 +384,13 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCancel = async (id: string) => {
-    if (!confirm("Are you sure you want to cancel this reminder?")) return;
+  const handleDelete = async (reminder: ReminderItem) => {
+    const extra = reminder.repeat ? " It repeats, so all future calls stop too." : "";
+    if (!confirm(`Delete "${reminder.title}"?${extra}`)) return;
     try {
-      const res = await api.post(`/reminders/${id}/cancel`);
+      const res = await api.delete(`/reminders/${reminder.id}`);
       if (res.data?.success) {
-        toast.success("Reminder cancelled.");
+        toast.success("Reminder deleted.");
         await fetchReminders();
         // Cancelling before any call gives a free test back; pick up the new count
         if (!isPaid) {
@@ -322,7 +400,7 @@ export default function DashboardPage() {
         }
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to cancel reminder");
+      toast.error(err.response?.data?.message || "Failed to delete reminder");
     }
   };
 
@@ -492,13 +570,21 @@ export default function DashboardPage() {
 
           <div className="bg-white p-5 rounded-[22px]">
             <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-400">
-              Telephony Line
+              Calling hours
             </span>
-            <p className="mt-2 font-display text-2xl sm:text-3xl tracking-tight font-normal text-emerald-600 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Active
+            <p className="mt-2 font-display text-xl sm:text-2xl tracking-tight font-normal text-[#151515]">
+              {formatHours(callingHours)}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Calls reach your phone</p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Calls only ring in this window.{" "}
+              <button
+                type="button"
+                onClick={() => setShowSettingsModal(true)}
+                className="cursor-pointer font-medium text-neutral-800 underline underline-offset-2"
+              >
+                Change
+              </button>
+            </p>
           </div>
         </div>
 
@@ -627,6 +713,12 @@ export default function DashboardPage() {
                           <span className="text-neutral-400 font-mono text-[11px]">
                             Retries: {reminder.maxAttempts}x ({reminder.retryIntervalMinutes}m)
                           </span>
+                          {reminder.repeat && (
+                            <span className="flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] text-violet-700">
+                              <Repeat className="h-3 w-3" />
+                              {describeRepeat(reminder.repeat, reminder.repeatWeekday)}
+                            </span>
+                          )}
                           {cardHeldUntil && (
                             <span className="basis-full flex items-center gap-1 text-[11px] text-amber-700">
                               <Moon className="h-3 w-3" />
@@ -650,7 +742,7 @@ export default function DashboardPage() {
                         <span>History</span>
                       </button>
 
-                      {!isClosed(reminder.status) && (
+                      {!isClosed(reminder.status) && reminder.status !== "CALLING" && (
                         <>
                           <button
                             type="button"
@@ -683,11 +775,23 @@ export default function DashboardPage() {
                         </>
                       )}
 
-                      {!isClosed(reminder.status) && (
+                      {!isClosed(reminder.status) && reminder.status !== "CALLING" && (
                         <button
                           type="button"
-                          onClick={() => handleCancel(reminder.id)}
-                          title="Cancel reminder"
+                          onClick={() => handleOpenEdit(reminder)}
+                          title="Edit reminder"
+                          aria-label={`Edit ${reminder.title}`}
+                          className="rounded-full p-1.5 text-neutral-400 hover:text-neutral-900 transition cursor-pointer"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                      {reminder.status !== "CALLING" && (
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(reminder)}
+                          title="Delete reminder"
+                          aria-label={`Delete ${reminder.title}`}
                           className="rounded-full p-1.5 text-neutral-400 hover:text-rose-600 transition cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -705,14 +809,18 @@ export default function DashboardPage() {
       {/* CREATE REMINDER MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/30 backdrop-blur-sm p-4">
-          <div className="w-full max-w-lg bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl">
+          <div className="w-full max-w-lg max-h-[92vh] overflow-y-auto bg-white rounded-[28px] p-6 sm:p-8 shadow-2xl">
             <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
               <h3 className="text-lg font-medium text-[#151515] tracking-tight">
-                New Voice Reminder
+                {editingId ? "Edit Reminder" : "New Voice Reminder"}
               </h3>
               <button
                 type="button"
-                onClick={() => setShowCreateModal(false)}
+                aria-label="Close"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingId(null);
+                }}
                 className="grid h-8 w-8 place-items-center rounded-full text-neutral-400 hover:bg-zinc-100 hover:text-black transition cursor-pointer"
               >
                 ✕
@@ -747,6 +855,14 @@ export default function DashboardPage() {
                 />
               </div>
 
+              <p className="flex items-center gap-1.5 rounded-2xl bg-neutral-50 px-3.5 py-2.5 text-xs text-neutral-600">
+                <Clock className="h-3.5 w-3.5 shrink-0 text-neutral-500" />
+                <span>
+                  Your calling hours are <strong>{formatHours(callingHours)}</strong>. Pick a time inside them and at least{" "}
+                  {MIN_LEAD_MINUTES} minutes from now.
+                </span>
+              </p>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-mono uppercase tracking-wider text-neutral-500 mb-1.5">
@@ -755,6 +871,7 @@ export default function DashboardPage() {
                   <input
                     type="date"
                     required
+                    min={toLocalInputs(new Date(now)).date}
                     value={newDate}
                     onChange={(e) => setNewDate(e.target.value)}
                     className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
@@ -773,6 +890,52 @@ export default function DashboardPage() {
                     className="w-full rounded-2xl border border-zinc-200 px-3.5 py-2 text-sm text-[#151515] focus:outline-none focus:border-neutral-900"
                   />
                 </div>
+              </div>
+
+              {blockTooSoon && (
+                <p role="alert" className="rounded-2xl bg-rose-50 px-3.5 py-2.5 text-xs text-rose-800">
+                  That time is too soon or already passed. Pick a time at least {MIN_LEAD_MINUTES} minutes from now.
+                </p>
+              )}
+
+              <div>
+                <label
+                  htmlFor="reminder-repeat"
+                  className="mb-1.5 flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-neutral-500"
+                >
+                  Repeat
+                  {!isPro && (
+                    <span className="flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 font-sans text-[10px] normal-case tracking-normal text-violet-700">
+                      <Lock className="h-2.5 w-2.5" /> Pro
+                    </span>
+                  )}
+                </label>
+                <select
+                  id="reminder-repeat"
+                  value={newRepeat}
+                  onChange={(e) => {
+                    const value = e.target.value as "NONE" | RepeatRule;
+                    if (value !== "NONE" && !isPro) {
+                      setPlanReason("Repeating reminders are part of Pro. Upgrade to get daily or weekly calls.");
+                      setShowUpgradeModal(true);
+                      return;
+                    }
+                    setNewRepeat(value);
+                  }}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-3.5 py-2 text-sm text-[#151515] focus:border-neutral-900 focus:outline-none"
+                >
+                  {REPEAT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                      {o.value !== "NONE" && !isPro ? " (Pro)" : ""}
+                    </option>
+                  ))}
+                </select>
+                {newRepeat !== "NONE" && (
+                  <p className="mt-1.5 text-[11px] text-neutral-500">
+                    After each call (done or missed), the next one is scheduled automatically at the same time.
+                  </p>
+                )}
               </div>
 
               {plannedHeldUntil && (
@@ -861,10 +1024,10 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || blockTooSoon}
                   className="rounded-2xl bg-zinc-950 px-6 py-2 text-xs sm:text-sm font-medium text-white hover:bg-black transition shadow-sm cursor-pointer disabled:opacity-50"
                 >
-                  {isSubmitting ? "Scheduling..." : "Schedule Call"}
+                  {isSubmitting ? "Saving..." : editingId ? "Save changes" : "Schedule Call"}
                 </button>
               </div>
             </form>
@@ -935,7 +1098,13 @@ export default function DashboardPage() {
                     )}
 
                     {attempt.failureReason && (
-                      <p className="text-rose-600 text-[11px]">Reason: {attempt.failureReason}</p>
+                      <p className="text-rose-600 text-[11px]">
+                        {/providerfault|sip-\d{3}|insufficient|trunk/i.test(attempt.failureReason)
+                          ? "Our phone line couldn't place this call. It's on our side, not yours, and we've been alerted."
+                          : /did-not-answer|no-answer|busy|voicemail/i.test(attempt.failureReason)
+                          ? "You didn't pick up this call."
+                          : `Reason: ${attempt.failureReason}`}
+                      </p>
                     )}
                   </div>
                 ))

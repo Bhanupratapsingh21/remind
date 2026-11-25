@@ -22,6 +22,8 @@ export const ENV = {
   SMTP_FROM: process.env.SMTP_FROM || "Eavara OTP <eavara@bpss.tech>",
   // Brevo API key (xkeysib-...). When set, email goes over HTTPS instead of SMTP
   BREVO_API_KEY: process.env.BREVO_API_KEY || "",
+  // Where to email operational alerts (e.g. the phone carrier refusing calls). Optional.
+  ADMIN_ALERT_EMAIL: process.env.ADMIN_ALERT_EMAIL || "",
 
   // Dodo Payments. Optional: without the API key the billing routes answer 503 and the app keeps running.
   DODO_PAYMENTS_API_KEY: process.env.DODO_PAYMENTS_API_KEY || "",

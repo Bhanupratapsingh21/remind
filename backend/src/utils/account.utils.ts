@@ -7,6 +7,8 @@ export function accountExtras(user: {
   cancelAtPeriodEnd?: boolean | null;
   callingStartTime?: string | null;
   callingEndTime?: string | null;
+  defaultMaxAttempts?: number | null;
+  defaultRetryInterval?: number | null;
 }) {
   return {
     callTone: user.callTone || "friendly",
@@ -17,5 +19,7 @@ export function accountExtras(user: {
     // The dashboard warns when a reminder falls outside these hours (the worker holds it until they open)
     callingStartTime: user.callingStartTime || "08:00",
     callingEndTime: user.callingEndTime || "22:00",
+    defaultMaxAttempts: user.defaultMaxAttempts || 3,
+    defaultRetryInterval: user.defaultRetryInterval || 10,
   };
 }

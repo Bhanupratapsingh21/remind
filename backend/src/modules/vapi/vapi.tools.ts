@@ -32,11 +32,14 @@ export class VapiToolsService {
 
       // Cancel any future scheduled retry jobs
       await SchedulerService.cancelPendingJobs(reminderId);
+      const repeated = await ReminderService.rollRepeat(reminderId);
 
       console.log(`✅ [Vapi Tools] Reminder "${updated.title}" marked as COMPLETED by voice assistant.`);
       return {
         toolCallId,
-        result: `Marked "${updated.title}" as completed.`,
+        result: repeated
+          ? `Marked "${updated.title}" as completed. It repeats, so the next call is already scheduled.`
+          : `Marked "${updated.title}" as completed.`,
       };
     } catch (error: any) {
       console.error("❌ [Vapi Tools] Error completing reminder:", error);

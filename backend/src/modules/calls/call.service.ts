@@ -1,7 +1,45 @@
 import prisma from "../../config/db";
+import { ReminderService } from "../reminders/reminder.service";
 import { VapiService } from "../vapi/vapi.service";
 import { SchedulerService } from "../../queues/reminder.queue";
 import { ENV } from "../../config/env";
+import { redisClient } from "../../config/redis";
+import { EmailService } from "../../services/email.service";
+
+/** The phone carrier (Vobiz) or Vapi's telephony refused or broke the call; not the user's fault */
+export function isCarrierFault(reason?: string | null): boolean {
+  return !!reason && /providerfault|sip-\d{3}|sip-outbound|insufficient|trunk/i.test(reason);
+}
+
+/**
+ * Tell the owner when the carrier refuses calls (e.g. Vobiz 403 after a trial number expires or the
+ * balance runs out). At most one email per hour, so a burst of retries doesn't flood the inbox.
+ */
+async function alertCarrierFault(reason: string, userId: string, vapiCallId: string) {
+  console.error(`🚨 [CallService] Carrier refused call ${vapiCallId} for user ${userId}: ${reason}`);
+  if (!ENV.ADMIN_ALERT_EMAIL) return;
+  try {
+    const first = await redisClient.set("alert:carrier-fault", "1", "EX", 3600, "NX");
+    if (!first) return;
+    await EmailService.sendPlain(
+      ENV.ADMIN_ALERT_EMAIL,
+      "Remind: calls are being refused by the phone carrier",
+      [
+        "A reminder call failed before it reached the user's phone.",
+        "",
+        `Reason: ${reason}`,
+        `Vapi call: ${vapiCallId}`,
+        `User: ${userId}`,
+        "",
+        "Usually this means the Vobiz number, trunk or balance needs attention: check the Vobiz console",
+        "(SIP Trunk > Call logs for the reason, and your balance / number status).",
+        "You'll get at most one of these emails per hour.",
+      ].join("\n")
+    );
+  } catch (error) {
+    console.error("❌ [CallService] Could not send carrier alert:", error);
+  }
+}
 
 /** Attempt outcomes that trigger the retry policy */
 const RETRYABLE_STATUSES = ["NO_ANSWER", "BUSY", "FAILED", "VOICEMAIL"];
@@ -190,6 +228,7 @@ export class CallService {
           where: { id: reminderId },
           data: { status: "FAILED" },
         });
+        await ReminderService.rollRepeat(reminderId);
       }
 
       throw error;
@@ -262,6 +301,10 @@ export class CallService {
       },
     });
 
+    if (isCarrierFault(data.failureReason)) {
+      await alertCarrierFault(data.failureReason!, reminder.userId, data.vapiCallId);
+    }
+
     await prisma.callLog.create({
       data: {
         reminderId: reminder.id,
@@ -309,6 +352,7 @@ export class CallService {
           where: { id: reminder.id },
           data: { status: "MISSED" },
         });
+        await ReminderService.rollRepeat(reminder.id);
       }
     } else if (data.status === "COMPLETED") {
       // Call finished normally without a complete / snooze / cancel tool call
@@ -316,6 +360,7 @@ export class CallService {
         where: { id: reminder.id },
         data: { status: "ACKNOWLEDGED" },
       });
+      await ReminderService.rollRepeat(reminder.id);
     }
   }
 
@@ -373,8 +418,11 @@ export class CallService {
       where: { id: reminderId, userId },
     });
 
-    if (!reminder) {
+    if (!reminder || reminder.deletedAt) {
       throw new Error("Reminder not found or unauthorized");
+    }
+    if (reminder.status === "CALLING") {
+      throw new Error("A call for this reminder is already in progress.");
     }
 
     // Reset status to SCHEDULED and trigger immediately as a fresh retry cycle

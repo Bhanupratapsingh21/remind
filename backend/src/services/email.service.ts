@@ -100,6 +100,26 @@ export class EmailService {
     }
   }
 
+  /** Plain operational email (alerts to the owner). Uses the API when configured, else SMTP. */
+  public static async sendPlain(toEmail: string, subject: string, text: string): Promise<boolean> {
+    const html = `<pre style="font-family:ui-monospace,monospace;white-space:pre-wrap">${text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")}</pre>`;
+    if (ENV.BREVO_API_KEY) return this.sendViaBrevoApi(toEmail, subject, text, html);
+    const transporter = this.getTransporter();
+    if (!transporter || !ENV.SMTP_PASS) {
+      console.warn(`⚠️ [Email] Not configured; alert not sent: ${subject}`);
+      return false;
+    }
+    try {
+      await transporter.sendMail({ from: ENV.SMTP_FROM, to: toEmail, subject, text, html });
+      return true;
+    } catch (error) {
+      console.error(`❌ [Email] Alert to ${toEmail} failed:`, error);
+      return false;
+    }
+  }
+
   /** Sends through Brevo's transactional email API (HTTPS, port 443) */
   private static async sendViaBrevoApi(toEmail: string, subject: string, text: string, html: string): Promise<boolean> {
     // SMTP_FROM looks like "Name <address>"; the sender address must be verified in Brevo

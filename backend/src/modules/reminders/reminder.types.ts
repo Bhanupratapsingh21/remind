@@ -8,6 +8,7 @@ export const createReminderSchema = z.object({
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
   notificationChannel: z.enum(["PHONE", "WHATSAPP", "PUSH", "SMS"]).default("PHONE"),
   voicePersona: z.string().optional(),
+  repeat: z.enum(["NONE", "DAILY", "WEEKDAYS", "WEEKLY"]).optional(),
   retryPolicy: z
     .object({
       maxAttempts: z.number().int().min(1).max(10).default(3),
@@ -25,6 +26,7 @@ export const updateReminderSchema = z.object({
   voicePersona: z.string().optional(),
   maxAttempts: z.number().int().min(1).max(10).optional(),
   retryIntervalMinutes: z.number().int().min(1).max(120).optional(),
+  repeat: z.enum(["NONE", "DAILY", "WEEKDAYS", "WEEKLY"]).optional(),
 });
 
 export const snoozeReminderSchema = z.object({
