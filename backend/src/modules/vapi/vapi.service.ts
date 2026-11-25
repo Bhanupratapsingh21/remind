@@ -304,6 +304,8 @@ ENDING THE CALL (calls are billed per minute, so never leave the line open):
     state: "mock" | "pending" | "ok" | "error";
     problems: string[];
     phoneProvider?: string;
+    /** The number calls come from, as Vapi stores it (e.g. "08065354620" or "+91...") */
+    phoneNumber?: string;
   } = { state: "pending", problems: [] };
 
   /**
@@ -319,6 +321,7 @@ ENDING THE CALL (calls are billed per minute, so never leave the line open):
 
     const problems: string[] = [];
     let phoneProvider: string | undefined;
+    let phoneNumber: string | undefined;
     const describe = (error: any) => {
       if (error.response?.status === 401) return "Vapi rejected VAPI_API_KEY (401). Use the private key.";
       return JSON.stringify(error.response?.data || error.message);
@@ -330,6 +333,7 @@ ENDING THE CALL (calls are billed per minute, so never leave the line open):
       try {
         const { data } = await vapiHttp().get(`/phone-number/${ENV.VAPI_PHONE_NUMBER_ID}`);
         phoneProvider = data.provider;
+        phoneNumber = data.number;
         console.log(
           `📞 [VapiService] Calling from ${data.number || data.sipUri || data.id} (provider: ${data.provider})`
         );
@@ -359,7 +363,7 @@ ENDING THE CALL (calls are billed per minute, so never leave the line open):
       }
     }
 
-    this.setupStatus = { state: problems.length ? "error" : "ok", problems, phoneProvider };
+    this.setupStatus = { state: problems.length ? "error" : "ok", problems, phoneProvider, phoneNumber };
     problems.forEach((p) => console.error(`❌ [VapiService] ${p}`));
   }
 }

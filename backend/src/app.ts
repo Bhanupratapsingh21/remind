@@ -13,6 +13,17 @@ import { ENV } from "./config/env";
 import { redisClient } from "./config/redis";
 import { VapiService } from "./modules/vapi/vapi.service";
 
+/** "08065354620" or "918065354620" -> "+918065354620" (Indian numbers); other formats pass through */
+const toDisplayE164 = (raw: string): string | null => {
+  const digits = raw.replace(/[^\d+]/g, "");
+  if (!digits) return null;
+  if (digits.startsWith("+")) return digits;
+  if (/^0\d{10}$/.test(digits)) return `+91${digits.slice(1)}`;
+  if (/^91\d{10}$/.test(digits)) return `+${digits}`;
+  if (/^\d{10}$/.test(digits)) return `+91${digits}`;
+  return digits;
+};
+
 export const createApp = () => {
   const app = express();
 
@@ -57,6 +68,12 @@ export const createApp = () => {
       vapiMock: ENV.VAPI_MOCK_CALLS,
       vapi,
     });
+  });
+
+  // Public app config for the dashboard: the number reminder calls come from, so users can save it
+  app.get("/api/config", (req: Request, res: Response) => {
+    const raw = ENV.CALLER_ID_NUMBER || VapiService.setupStatus.phoneNumber || "";
+    res.json({ success: true, data: { callerNumber: toDisplayE164(raw), callerName: "Remind" } });
   });
 
   // API Routes
