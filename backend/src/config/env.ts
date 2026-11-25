@@ -31,7 +31,15 @@ export const ENV = {
   DODO_PAYMENTS_API_KEY: process.env.DODO_PAYMENTS_API_KEY || "",
   DODO_PAYMENTS_WEBHOOK_KEY: process.env.DODO_PAYMENTS_WEBHOOK_KEY || "",
   // "test_mode" (test.dodopayments.com) or "live_mode" (live.dodopayments.com)
-  DODO_ENVIRONMENT: process.env.DODO_ENVIRONMENT === "live_mode" ? "live_mode" : "test_mode",
+  // The key decides: dodo_live_ keys only work on live.dodopayments.com, dodo_test_ keys only on test.
+  // DODO_ENVIRONMENT is used only when the key has neither prefix.
+  DODO_ENVIRONMENT: (process.env.DODO_PAYMENTS_API_KEY || "").startsWith("dodo_live")
+    ? "live_mode"
+    : (process.env.DODO_PAYMENTS_API_KEY || "").startsWith("dodo_test")
+    ? "test_mode"
+    : process.env.DODO_ENVIRONMENT === "live_mode"
+    ? "live_mode"
+    : "test_mode",
   DODO_PRODUCT_BASIC: process.env.DODO_PRODUCT_BASIC || "",
   DODO_PRODUCT_PRO: process.env.DODO_PRODUCT_PRO || "",
 
