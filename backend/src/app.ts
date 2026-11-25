@@ -7,6 +7,7 @@ import userRoutes from "./routes/user.routes";
 import webhookRoutes from "./routes/webhook.routes";
 import billingRoutes from "./routes/billing.routes";
 import { BillingController } from "./modules/billing/billing.controller";
+import { BillingService } from "./modules/billing/billing.service";
 import { errorHandler } from "./middlewares/error.middleware";
 import { requestLogger } from "./middlewares/logger.middleware";
 import { ENV } from "./config/env";
@@ -57,6 +58,7 @@ export const createApp = () => {
     }
 
     const vapi = VapiService.setupStatus;
+    const billing = BillingService.setupStatus;
     const healthy = redis === "connected" && vapi.state !== "error";
 
     res.status(redis === "connected" ? 200 : 503).json({
@@ -67,6 +69,7 @@ export const createApp = () => {
       redis,
       vapiMock: ENV.VAPI_MOCK_CALLS,
       vapi,
+      billing,
     });
   });
 
