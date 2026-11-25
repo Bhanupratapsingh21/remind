@@ -1,4 +1,5 @@
 import createApp from "./app";
+import { BillingService } from "./modules/billing/billing.service";
 import { ENV, getProductionConfigErrors } from "./config/env";
 import prisma from "./config/db";
 import { redisClient } from "./config/redis";
@@ -30,6 +31,7 @@ SchedulerService.scheduleCallReconciliation().catch((err) =>
 
 // Confirm the Vapi key, phone number (and its telephony provider) and assistant before the first call
 VapiService.verifySetup();
+BillingService.verifySetup().catch((error) => console.error("❌ [Billing] Setup check crashed:", error));
 
 const server = app.listen(ENV.PORT, () => {
   console.log(`\n=================================================`);
